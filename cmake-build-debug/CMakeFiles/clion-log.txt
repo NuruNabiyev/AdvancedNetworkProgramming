@@ -1,0 +1,4 @@
+/home/nuru/.local/share/JetBrains/Toolbox/apps/CLion/ch-0/202.6948.80/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/nuru/Desktop/ANP/anp_netskeleton-master
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/nuru/Desktop/ANP/anp_netskeleton-master/cmake-build-debug
