@@ -1,0 +1,16 @@
+# Created by .ignore support plugin (hsz.mobi)
+cmake-build-debug/CMakeFiles/3.17.3/CompilerIdC/tmp/
+cmake-build-debug/CMakeFiles/3.17.3/CompilerIdCXX/tmp/
+cmake-build-debug/CMakeFiles/CMakeTmp/
+cmake-build-debug/
+cmake-build-debug/*
+cmake-build-debug/CMakeFiles
+CMakeFiles
+arpdummy
+arpdummy.c
+.idea
+CMakeCache.txt
+Makefile
+cmake_install.cmake
+cmake-build-debug
+install_manifest.txt
