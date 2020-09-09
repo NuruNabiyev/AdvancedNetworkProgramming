@@ -15,3 +15,5 @@ Makefile
 cmake_install.cmake
 cmake-build-debug
 install_manifest.txt
+/cmake-build-debug/
+/.idea/
