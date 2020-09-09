@@ -1,19 +1,91 @@
-# Created by .ignore support plugin (hsz.mobi)
-cmake-build-debug/CMakeFiles/3.17.3/CompilerIdC/tmp/
-cmake-build-debug/CMakeFiles/3.17.3/CompilerIdCXX/tmp/
-cmake-build-debug/CMakeFiles/CMakeTmp/
-cmake-build-debug/
-cmake-build-debug/*
-cmake-build-debug/CMakeFiles
-CMakeFiles
-arpdummy
-arpdummy.c
-/.idea
-/cmake-build-debug
+
+# Created by https://www.toptal.com/developers/gitignore/api/cmake,linux,c
+# Edit at https://www.toptal.com/developers/gitignore?templates=cmake,linux,c
+
+### C ###
+# Prerequisites
+*.d
+
+# Object files
+*.o
+*.ko
+*.obj
+*.elf
+
+# Linker output
+*.ilk
+*.map
+*.exp
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Libraries
+*.lib
+*.a
+*.la
+*.lo
+
+# Shared objects (inc. Windows DLLs)
+*.dll
+*.so
+*.so.*
+*.dylib
+
+# Executables
+*.exe
+*.out
+*.app
+*.i*86
+*.x86_64
+*.hex
+
+# Debug files
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Kernel Module Compile Results
+*.mod*
+*.cmd
+.tmp_versions/
+modules.order
+Module.symvers
+Mkfile.old
+dkms.conf
+
+### CMake ###
+CMakeLists.txt.user
 CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
 Makefile
 cmake_install.cmake
-cmake-build-debug
 install_manifest.txt
-/cmake-build-debug/
-/.idea/
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+### CMake Patch ###
+# External projects
+*-prefix/
+
+### Linux ###
+*~
+
+# temporary files which can be created if a process still has a handle open of a deleted file
+.fuse_hidden*
+
+# KDE directory preferences
+.directory
+
+# Linux trash folder which might appear on any partition or disk
+.Trash-*
+
+# .nfs files are created when an open file is removed but is still being accessed
+.nfs*
+
+# End of https://www.toptal.com/developers/gitignore/api/cmake,linux,c
