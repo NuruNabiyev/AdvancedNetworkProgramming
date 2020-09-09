@@ -8,7 +8,8 @@ cmake-build-debug/CMakeFiles
 CMakeFiles
 arpdummy
 arpdummy.c
-.idea
+/.idea
+/cmake-build-debug
 CMakeCache.txt
 Makefile
 cmake_install.cmake
