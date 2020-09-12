@@ -66,4 +66,14 @@ void icmp_reply(struct subuff *sub) {
     //FIXME: implement your ICMP reply implementation here
     // preapre an ICMP response buffer
     // send it out on ip_ouput(...)
+    printf("------------ENTERED  ICMP_REPLY----------\n\n");                                                                                      
+    struct iphdr *ih = IP_HDR_FROM_SUB(sub);                                                                                                      
+    struct icmp *ic = (struct icmp *)(ih->data);                                                                                                  
+                                                                                                                                               
+    ic->type = ICMP_V4_ECHO;                                                                                                                      
+    ic->code = ICMP_V4_ECHO;                                                                                                                      
+    ic->checksum = 0;                                                                                                                             
+    ic->checksum = do_csum(ic, IP_PAYLOAD_LEN(ih), 0);                                                                                            
+                                                                                                                     
+    ip_output(ih->saddr, sub);
 }
