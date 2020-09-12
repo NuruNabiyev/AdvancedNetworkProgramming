@@ -19,15 +19,22 @@
 #include "ip.h"
 #include "utilities.h"
 
-void icmp_rx(struct subuff *sub)
-{
-    //FIXME: implement your ICMP packet processing implementation here
-    //figure out various type of ICMP packets, and implement the ECHO response type (icmp_reply)
+//FIXME: implement your ICMP packet processing implementation here
+//figure out various type of ICMP packets, and implement the ECHO response type (icmp_reply)
+void icmp_rx(struct subuff *sub) {
+    // todo compare checksum, return if not correct
+
+    // get icmp
+    struct iphdr *ih = IP_HDR_FROM_SUB(sub);
+    struct icmp *ic = (struct icmp *) (ih->data);
+
+    // todo check if type is 8 -> icmp_reply
+    printf("\nICMP type is %i; code %i; check %hu; data %s\n",
+           ic->type, ic->code, ic->checksum, ic->data);
     free_sub(sub);
 }
 
-void icmp_reply(struct subuff *sub)
-{
+void icmp_reply(struct subuff *sub) {
     //FIXME: implement your ICMP reply implementation here
     // preapre an ICMP response buffer
     // send it out on ip_ouput(...)
