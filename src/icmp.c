@@ -22,15 +22,43 @@
 //FIXME: implement your ICMP packet processing implementation here
 //figure out various type of ICMP packets, and implement the ECHO response type (icmp_reply)
 void icmp_rx(struct subuff *sub) {
-    // todo compare checksum, return if not correct
-
     // get icmp
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
     struct icmp *ic = (struct icmp *) (ih->data);
 
-    // todo check if type is 8 -> icmp_reply
-    printf("\nICMP type is %i; code %i; check %hu; data %s\n",
-           ic->type, ic->code, ic->checksum, ic->data);
+    /*
+     * Get checksum from ICMP Packet.
+     * Reset & Recalculate it.
+     * */
+    uint16_t in_pkt_csum = ic->checksum;                                                                                                          
+    ic->checksum = 0;                                                                                                                             
+    uint16_t csum = do_csum(ic, IP_PAYLOAD_LEN(ih), 0);                                                                                           
+    
+    /* For debug purpoeses. */
+    printf("------------------\n");                                                                                                               
+    printf("ICMP PACKET: Type=%u, Code=%u CSUM=%hx in_pkt_csum=%hx\n", ic->type, ic->code, csum, in_pkt_csum);                                    
+    printf("------------------\n");                                                                                                               
+                              
+    /* Check if the checksum matches */
+    if(csum != in_pkt_csum){                                                                                                                      
+        printf("Error: invalid checksum, dropping packet");                                                                                       
+        goto drop_pkt;                                                                                                                            
+    }                                                                                                                                             
+                                                                                                                                                  
+    switch (ic->type) {                                                                                                                           
+        case ICMP_V4_ECHO:                                                                                                                        
+            printf("ECHO REQUEST ARRIVED\n");                                                                                                     
+            icmp_reply(sub);                                                                                                                      
+            break;                                                                                                                                
+        case ICMP_V4_REPLY:                                                                                                                       
+            // we already processed the reply                                                                                                     
+            goto drop_pkt;                                                                                                                        
+        default:                                                                                                                                  
+            printf("Error: Unknown IP header proto %d \n", ic->type);                                                                             
+            goto drop_pkt;                                                                                                                        
+    }                                                                                                                                             
+                                                                                                                                                  
+    drop_pkt:                                                                                                                                     
     free_sub(sub);
 }
 
