@@ -89,4 +89,7 @@ _deps
 .nfs*
 
 # End of https://www.toptal.com/developers/gitignore/api/cmake,linux,c
+# ignores local file tags for my editor
 tags
+# this gets remade everytime so no need to storeu
+lib/
