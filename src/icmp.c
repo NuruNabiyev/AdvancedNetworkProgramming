@@ -34,11 +34,6 @@ void icmp_rx(struct subuff *sub) {
     ic->checksum = 0;                                                                                                                             
     uint16_t csum = do_csum(ic, IP_PAYLOAD_LEN(ih), 0);                                                                                           
     
-    /* For debug purpoeses. */
-    printf("------------------\n");                                                                                                               
-    printf("ICMP PACKET: Type=%u, Code=%u CSUM=%hx in_pkt_csum=%hx\n", ic->type, ic->code, csum, in_pkt_csum);                                    
-    printf("------------------\n");                                                                                                               
-                              
     /* Check if the checksum matches */
     if(csum != in_pkt_csum){                                                                                                                      
         printf("Error: invalid checksum, dropping packet");                                                                                       
@@ -66,14 +61,20 @@ void icmp_reply(struct subuff *sub) {
     //FIXME: implement your ICMP reply implementation here
     // preapre an ICMP response buffer
     // send it out on ip_ouput(...)
-    printf("------------ENTERED  ICMP_REPLY----------\n\n");                                                                                      
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);                                                                                                      
     struct icmp *ic = (struct icmp *)(ih->data);                                                                                                  
-                                                                                                                                               
-    ic->type = ICMP_V4_ECHO;                                                                                                                      
-    ic->code = ICMP_V4_ECHO;                                                                                                                      
+   
+    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + IP_PAYLOAD_LEN(ih));
+    sub_push(sub, IP_PAYLOAD_LEN(ih));
+    
+    sub->protocol = IPP_NUM_ICMP;
+
+    ic->type = ICMP_V4_REPLY;                                                                                                                      
+    ic->code = ICMP_V4_REPLY;                                                                                                                      
     ic->checksum = 0;                                                                                                                             
     ic->checksum = do_csum(ic, IP_PAYLOAD_LEN(ih), 0);                                                                                            
-                                                                                                                     
+
+    ic->checksum = htons(ic->checksum);
+
     ip_output(ih->saddr, sub);
 }
