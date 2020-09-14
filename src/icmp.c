@@ -42,7 +42,6 @@ void icmp_rx(struct subuff *sub) {
                                                                                                                                                   
     switch (ic->type) {                                                                                                                           
         case ICMP_V4_ECHO:                                                                                                                        
-            printf("ECHO REQUEST ARRIVED\n");                                                                                                     
             icmp_reply(sub);                                                                                                                      
             break;                                                                                                                                
         case ICMP_V4_REPLY:                                                                                                                       
