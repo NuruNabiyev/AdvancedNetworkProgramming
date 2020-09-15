@@ -5,7 +5,9 @@ own networking stack.
 
 ## Dependencies
 `sudo apt install cmake`
+
 `sudo apt-get update && sudo apt-get install build-essential`
+
 `sudo apt install libcap-dev iputils-arping`
 
 ## Code 
