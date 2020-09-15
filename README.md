@@ -4,7 +4,9 @@ ANP skeleton is the basic skeleton code used in the ANP course for developing yo
 own networking stack. 
 
 ## Dependencies
-`apt install libcap-dev iputils-arping`
+`sudo apt install cmake`
+`sudo apt-get update && sudo apt-get install build-essential`
+`sudo apt install libcap-dev iputils-arping`
 
 ## Code 
 Corresponding to the figure 3 in the accompanying assignment, here is a brief 
