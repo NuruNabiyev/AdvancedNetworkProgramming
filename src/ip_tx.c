@@ -59,7 +59,7 @@ int ip_output(uint32_t dst_ip_addr, struct subuff *sub)
     ihdr->len = sub->len;
     ihdr->id = ihdr->id;
     ihdr->frag_offset = 0x4000;
-    ihdr->ttl = 64;
+    ihdr->ttl = 0;
     ihdr->proto = sub->protocol;
     ihdr->saddr = sub->dev->addr;
     ihdr->daddr = dst_ip_addr;
