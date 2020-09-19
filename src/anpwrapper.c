@@ -8,7 +8,7 @@
 #include "init.h"
 
 
-static int (*__start_main)(int (*main) (int, char * *, char * *), int argc, \
+static int (*__start_main)(int (*main) (int, char **, char **), int argc, \
        char ** ubp_av, void (*init) (void), void (*fini) (void),            \
        void (*rtld_fini) (void), void (*stack_end));
 
