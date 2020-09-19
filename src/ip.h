@@ -27,8 +27,8 @@
                     hdr->daddr >> 24, hdr->daddr >> 16, hdr->daddr >> 8, hdr->daddr >> 0); \
     } while (0)
 
-#define debug_ip(msg, args...) do {\
-    printf("DEBUG_IP: (%s, %d) "msg, __FUNCTION__, __LINE__, ## args);\
+#define debug_ip(msg, args...) do {                                    \
+    printf("DEBUG_IP: (%s, %d) "msg, __FUNCTION__, __LINE__, ## args); \
 }while(0);
 
 #else
