@@ -9,11 +9,11 @@
 
 
 static int (*__start_main)(int (*main) (int, char * *, char * *), int argc, \
-    char * * ubp_av, void (*init) (void), void (*fini) (void), \
-    void (*rtld_fini) (void), void (* stack_end));
+       char ** ubp_av, void (*init) (void), void (*fini) (void),            \
+       void (*rtld_fini) (void), void (*stack_end));
 
 static ssize_t (*_send)(int fd, const void *buf, size_t n, int flags) = NULL;
-static ssize_t (*_recv)(int fd, void *buf, size_t n, int flags) = NULL;
+static ssize_t (*_recv)(int fd, void *buf, size_t n, int flags)       = NULL;
 
 static int (*_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrlen) = NULL;
 static int (*_socket)(int domain, int type, int protocol) = NULL;
