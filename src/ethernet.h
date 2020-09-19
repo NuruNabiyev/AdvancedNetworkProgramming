@@ -5,8 +5,7 @@
 
 #include "subuff.h"
 
-struct eth_hdr
-{
+struct eth_hdr {
     uint8_t  dmac[6];
     uint8_t  smac[6];
     uint16_t ethertype;
@@ -31,8 +30,7 @@ struct eth_hdr
 #define eth_debug(msg, hdr)
 #endif
 
-static inline struct eth_hdr *eth_hdr(struct subuff *sub)
-{
+static inline struct eth_hdr *eth_hdr(struct subuff *sub) {
     struct eth_hdr *hdr = (struct eth_hdr *)sub_head(sub);
     // we need to reverse the byte order
     hdr->ethertype = ntohs(hdr->ethertype);

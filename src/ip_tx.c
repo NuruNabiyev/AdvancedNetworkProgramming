@@ -6,19 +6,17 @@
 #include "anp_netdev.h"
 #include "arp.h"
 
-void ip_send_check(struct iphdr *ihdr)
-{
+void ip_send_check(struct iphdr *ihdr) {
     uint32_t csum = do_csum(ihdr, ihdr->ihl * 4, 0);
     ihdr->csum = csum;
 }
 
-int dst_neigh_output(struct subuff *sub)
-{
-    struct iphdr *iphdr = IP_HDR_FROM_SUB(sub);
+int dst_neigh_output(struct subuff *sub) {
+    struct iphdr *iphdr           = IP_HDR_FROM_SUB(sub);
     struct anp_netdev *anp_netdev = sub->dev;
-    struct rtentry *rt = sub->rt;
-    uint32_t dst_addr = ntohl(iphdr->daddr);
-    uint32_t src_addr = ntohl(iphdr->saddr);
+    struct rtentry *rt            = sub->rt;
+    uint32_t dst_addr             = ntohl(iphdr->daddr);
+    uint32_t src_addr             = ntohl(iphdr->saddr);
 
     uint8_t *target_dst_mac;
 
@@ -36,8 +34,7 @@ int dst_neigh_output(struct subuff *sub)
     }
 }
 
-int ip_output(uint32_t dst_ip_addr, struct subuff *sub)
-{
+int ip_output(uint32_t dst_ip_addr, struct subuff *sub) {
     struct rtentry *rt;
     struct iphdr *ihdr = IP_HDR_FROM_SUB(sub);
 
@@ -53,25 +50,25 @@ int ip_output(uint32_t dst_ip_addr, struct subuff *sub)
 
     sub_push(sub, IP_HDR_LEN);
 
-    ihdr->version = IPP_NUM_IP_in_IP;
-    ihdr->ihl = 0x05;
-    ihdr->tos = 0;
-    ihdr->len = sub->len;
-    ihdr->id = ihdr->id;
+    ihdr->version     = IPP_NUM_IP_in_IP;
+    ihdr->ihl         = 0x05;
+    ihdr->tos         = 0;
+    ihdr->len         = sub->len;
+    ihdr->id          = ihdr->id;
     ihdr->frag_offset = 0x4000;
-    ihdr->ttl = 64;
-    ihdr->proto = sub->protocol;
-    ihdr->saddr = sub->dev->addr;
-    ihdr->daddr = dst_ip_addr;
-    ihdr->csum = 0;
+    ihdr->ttl         = 0;
+    ihdr->proto       = sub->protocol;
+    ihdr->saddr       = sub->dev->addr;
+    ihdr->daddr       = dst_ip_addr;
+    ihdr->csum        = 0;
 
     debug_ip_hdr("out", ihdr);
 
-    ihdr->len = htons(ihdr->len);
-    ihdr->id = htons(ihdr->id);
-    ihdr->daddr = htonl(ihdr->daddr);
-    ihdr->saddr = htonl(ihdr->saddr);
-    ihdr->csum = htons(ihdr->csum);
+    ihdr->len         = htons(ihdr->len);
+    ihdr->id          = htons(ihdr->id);
+    ihdr->daddr       = htonl(ihdr->daddr);
+    ihdr->saddr       = htonl(ihdr->saddr);
+    ihdr->csum        = htons(ihdr->csum);
     ihdr->frag_offset = htons(ihdr->frag_offset);
 
     ip_send_check(ihdr);

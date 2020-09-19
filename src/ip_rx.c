@@ -3,54 +3,53 @@
 #include "utilities.h"
 #include "icmp.h"
 
-int ip_rx(struct subuff *sub)
-{
-    struct iphdr *ih = IP_HDR_FROM_SUB(sub);
-    uint16_t csum = -1;
+int ip_rx(struct subuff *sub) {
+  struct iphdr *ih = IP_HDR_FROM_SUB(sub);
+  uint16_t csum = -1;
 
-    if (ih->version != IPP_NUM_IP_in_IP) {
-        printf("IP packet is not IP\n");
-        goto drop_pkt;
-    }
+  if (ih->version != IPP_NUM_IP_in_IP) {
+    printf("IP packet is not IP\n");
+    goto drop_pkt;
+  }
 
-    if (ih->ihl < 5) {
-        printf("IP packet header is too short, expected atleast 20 bytes, got %d \n", ((ih->ihl)<<2));
-        goto drop_pkt;
-    }
+  if (ih->ihl < 5) {
+    printf("IP packet header is too short, expected atleast 20 bytes, got %d \n", ((ih->ihl)<<2));
+    goto drop_pkt;
+  }
 
-    if (ih->ttl == 0) {
-        printf("ERROR: zero time to live, ttl, dropping packet \n");
-        goto drop_pkt;
-    }
+  if (ih->ttl == 0) {
+    printf("ERROR: zero time to live, ttl, dropping packet \n");
+    goto drop_pkt;
+  }
 
-    csum = do_csum(ih, ih->ihl * 4, 0);
+  csum = do_csum(ih, ih->ihl * 4, 0);
 
-    if (csum != 0) {
-        printf("Error: invalid checksum, dropping packet");
-        goto drop_pkt;
-    }
+  if (csum != 0) {
+    printf("Error: invalid checksum, dropping packet");
+    goto drop_pkt;
+  }
 
-    ih->saddr = ntohl(ih->saddr);
-    ih->daddr = ntohl(ih->daddr);
-    ih->len = ntohs(ih->len);
-    ih->id = ntohs(ih->id);
+  ih->saddr = ntohl(ih->saddr);
+  ih->daddr = ntohl(ih->daddr);
+  ih->len =   ntohs(ih->len);
+  ih->id =    ntohs(ih->id);
 
-    debug_ip_hdr("in", ih);
+  debug_ip_hdr("in", ih);
 
-    switch (ih->proto) {
-        case IPP_NUM_ICMP:
-            debug_ip("incoming ICMP packet\n");
-            icmp_rx(sub);
-            return 0;
-        case IPP_TCP:
-            printf("incoming TCP packet, further logic NYI \n");
-            goto drop_pkt;
-        default:
-            printf("Error: Unknown IP header proto %d \n", ih->proto);
-            goto drop_pkt;
-    }
-    drop_pkt:
-    free_sub(sub);
-    return 0;
+  switch (ih->proto) {
+    case IPP_NUM_ICMP:
+      debug_ip("incoming ICMP packet\n");
+      icmp_rx(sub);
+      return 0;
+    case IPP_TCP:
+      printf("incoming TCP packet, further logic NYI \n");
+      goto drop_pkt;
+    default:
+      printf("Error: Unknown IP header proto %d \n", ih->proto);
+      goto drop_pkt;
+  }
+drop_pkt:
+  free_sub(sub);
+  return 0;
 }
 

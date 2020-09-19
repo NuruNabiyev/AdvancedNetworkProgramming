@@ -32,8 +32,8 @@ void icmp_rx(struct subuff *sub) {
       printf("Error: Unknown IP header proto %d \n", ic->type);
       goto drop_pkt; 
   }
-  drop_pkt:
-    free_sub(sub);
+drop_pkt:
+  free_sub(sub);
 }
 
 void icmp_reply(struct subuff *sub) {
@@ -41,7 +41,7 @@ void icmp_reply(struct subuff *sub) {
   // preapre an ICMP response buffer
   // send it out on ip_ouput(...)
   struct iphdr *ih = IP_HDR_FROM_SUB(sub);
-  struct icmp *ic = (struct icmp *)(ih->data);
+  struct icmp *ic  = (struct icmp *)(ih->data);
   sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + IP_PAYLOAD_LEN(ih));
   sub_push(sub, IP_PAYLOAD_LEN(ih));
 
