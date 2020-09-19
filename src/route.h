@@ -11,12 +11,12 @@
 #define RT_UP       0x10
 
 struct rtentry {
-  struct   list_head list;
-  uint32_t dst;
-  uint32_t gateway;
-  uint32_t netmask;
-  uint8_t  flags;
-  struct   anp_netdev *dev;
+    struct   list_head list;
+    uint32_t dst;
+    uint32_t gateway;
+    uint32_t netmask;
+    uint8_t  flags;
+    struct   anp_netdev *dev;
 };
 
 void   route_init();

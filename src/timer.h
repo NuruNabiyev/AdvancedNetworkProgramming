@@ -4,18 +4,18 @@
 #include "systems_headers.h"
 #include "linklist.h"
 #define timer_dbg(msg, t)                                          \
-do {                                                               \
-  print_debug("Timer at %d: "msg": expires %d", tick, t->expires); \
-} while(0)
+    do {                                                               \
+        print_debug("Timer at %d: "msg": expires %d", tick, t->expires); \
+    } while(0)
 
 struct timer {
-  struct          list_head list;
-  int             refcnt;
-  uint32_t        expires;
-  int             cancelled;
-  void            *(*handler)(void *);
-  void            *arg;
-  pthread_mutex_t lock;
+    struct          list_head list;
+    int             refcnt;
+    uint32_t        expires;
+    int             cancelled;
+    void            *(*handler)(void *);
+    void            *arg;
+    pthread_mutex_t lock;
 };
 
 struct timer *timer_add(uint32_t expire, void *(*handler)(void *), void *arg);

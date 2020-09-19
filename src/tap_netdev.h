@@ -4,10 +4,10 @@
 #include "systems_headers.h"
 
 struct tap_netdev {
-  // tun device file descriptor
-  int tun_fd;
-  // device name
-  char *devname;
+    // tun device file descriptor
+    int tun_fd;
+    // device name
+    char *devname;
 };
 
 
