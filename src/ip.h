@@ -8,22 +8,22 @@
 //https://en.wikipedia.org/wiki/List_of_IP_protocol_numbers
 // IP protocol numbers
 #define IPP_NUM_ICMP     0x01
-#define IPP_NUM_IP_in_IP   0x04 // we are doing IP in IP tunning
-#define IPP_TCP    0x06
+#define IPP_NUM_IP_in_IP 0x04 // we are doing IP in IP tunning
+#define IPP_TCP          0x06
 
 #define DEBUG_IP
-#ifdef DEBUG_IP
-#define debug_ip_hdr(msg, hdr)                                                \
-    do {                                                                \
-        printf("IP (HDR %lu) "msg" (ihl: %hhu version: %hhu tos: %hhu "   \
-                    "len %hu id: %hu frag_offset: %hu ttl: %hhu " \
-                    "proto: %hhu csum: %hx " \
-                    "saddr: %hhu.%hhu.%hhu.%hhu daddr: %hhu.%hhu.%hhu.%hhu)\n", \
-                    IP_HDR_LEN, \
-                    hdr->ihl,                                           \
-                    hdr->version, hdr->tos, hdr->len, hdr->id,          \
-                    hdr->frag_offset, hdr->ttl, hdr->proto, hdr->csum,   \
-                    hdr->saddr >> 24, hdr->saddr >> 16, hdr->saddr >> 8, hdr->saddr >> 0, \
+#ifdef  DEBUG_IP
+#define debug_ip_hdr(msg, hdr)                                                             \
+    do {                                                                                   \
+        printf("IP (HDR %lu) "msg" (ihl: %hhu version: %hhu tos: %hhu "                    \
+                    "len %hu id: %hu frag_offset: %hu ttl: %hhu "                          \
+                    "proto: %hhu csum: %hx "                                               \
+                    "saddr: %hhu.%hhu.%hhu.%hhu daddr: %hhu.%hhu.%hhu.%hhu)\n",            \
+                    IP_HDR_LEN,                                                            \
+                    hdr->ihl,                                                              \
+                    hdr->version, hdr->tos, hdr->len, hdr->id,                             \
+                    hdr->frag_offset, hdr->ttl, hdr->proto, hdr->csum,                     \
+                    hdr->saddr >> 24, hdr->saddr >> 16, hdr->saddr >> 8, hdr->saddr >> 0,  \
                     hdr->daddr >> 24, hdr->daddr >> 16, hdr->daddr >> 8, hdr->daddr >> 0); \
     } while (0)
 
@@ -38,18 +38,18 @@
 
 // header references: https://www.blackmagicboxes.com/?page_id=237
 struct iphdr {
-    uint8_t ihl : 4;
-    uint8_t version : 4;
-    uint8_t tos;
+    uint8_t  ihl :     4;
+    uint8_t  version : 4;
+    uint8_t  tos;
     uint16_t len;
     uint16_t id;
     uint16_t frag_offset;
-    uint8_t ttl;
-    uint8_t proto;
+    uint8_t  ttl;
+    uint8_t  proto;
     uint16_t csum;
     uint32_t saddr;
     uint32_t daddr;
-    uint8_t data[];
+    uint8_t  data[];
 } __attribute__((packed));
 
 #define IP_HDR_LEN sizeof(struct iphdr)

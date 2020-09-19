@@ -11,10 +11,10 @@
 
 // ICMP packet header https://www.researchgate.net/figure/ICMP-packet-structure_fig5_316727741
 struct icmp {
-    uint8_t type;
-    uint8_t code;
+    uint8_t  type;
+    uint8_t  code;
     uint16_t checksum;
-    uint8_t data[];
+    uint8_t  data[];
 } __attribute__((packed));
 
 void icmp_rx(struct subuff *sub);

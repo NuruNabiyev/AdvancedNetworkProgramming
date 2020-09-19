@@ -20,6 +20,7 @@ static int (*_socket)(int domain, int type, int protocol) = NULL;
 static int (*_close)(int sockfd) = NULL;
 
 static int is_socket_supported(int domain, int type, int protocol) {
+  printf("static int is_socket_supported(int domain %d , int type %d, int protocol %d)\n", domain, type, protocol);
   if (domain != AF_INET) {
     return 0;
   }
@@ -33,16 +34,18 @@ static int is_socket_supported(int domain, int type, int protocol) {
   return 1;
 }
 
-// TODO: ANP milestone 3 -- implement the socket, and connect calls
+// TODO: ANP milestone 3 -- implement the socket call
 int socket(int domain, int type, int protocol) {
-  if (is_socket_supported(domain, type, protocol)) {
-    //TODO: implement your logic here
+  printf("int socket(int domain %d, int type %d, int protocol %d) \n",domain, type, protocol);
+  if (!is_socket_supported(domain, type, protocol)) {
+    // if this is not what anpnetstack support, let it go, let it go!
     return -ENOSYS;
   }
-  // if this is not what anpnetstack support, let it go, let it go!
+  //TODO: implement your logic here
   return _socket(domain, type, protocol);
 }
 
+// TODO: ANP milestone 3 -- implement the connect call
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
   //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
   bool is_anp_sockfd = false;
@@ -89,10 +92,11 @@ int close (int sockfd) {
 }
 
 void _function_override_init() {
+  printf("void _function_override_init() \n");
   __start_main = dlsym(RTLD_NEXT, "__libc_start_main");
-  _socket = dlsym(RTLD_NEXT, "socket");
-  _connect = dlsym(RTLD_NEXT, "connect");
-  _send = dlsym(RTLD_NEXT, "send");
-  _recv = dlsym(RTLD_NEXT, "recv");
-  _close = dlsym(RTLD_NEXT, "close");
+  _socket      = dlsym(RTLD_NEXT, "socket");
+  _connect     = dlsym(RTLD_NEXT, "connect");
+  _send        = dlsym(RTLD_NEXT, "send");
+  _recv        = dlsym(RTLD_NEXT, "recv");
+  _close       = dlsym(RTLD_NEXT, "close");
 }
