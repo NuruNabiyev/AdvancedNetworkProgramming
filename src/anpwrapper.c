@@ -39,10 +39,10 @@ int socket(int domain, int type, int protocol) {
     printf("int socket(int domain %d, int type %d, int protocol %d) \n",domain, type, protocol);
     if (!is_socket_supported(domain, type, protocol)) {
         // if this is not what anpnetstack support, let it go, let it go!
-        return -ENOSYS;
+        return _socket(domain, type, protocol);
     }
     //TODO: implement your logic here
-    return _socket(domain, type, protocol);
+    return -ENOSYS;
 }
 
 // TODO: ANP milestone 3 -- implement the connect call
