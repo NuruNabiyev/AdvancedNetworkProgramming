@@ -77,7 +77,6 @@ static int process_packet(struct subuff *sub) {
     struct eth_hdr *hdr = eth_hdr(sub);
     switch (hdr->ethertype) {
         case ETH_P_ARP:
-            // TODO: ANP milestone 1 -- run and test ARP implementation
             arp_rx(sub);
             break;
         case ETH_P_IP:

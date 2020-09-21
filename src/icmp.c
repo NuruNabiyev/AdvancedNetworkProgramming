@@ -2,8 +2,6 @@
 #include "ip.h"
 #include "utilities.h"
 
-//FIXME: implement your ICMP packet processing implementation here
-//figure out various type of ICMP packets, and implement the ECHO response type (icmp_reply)
 void icmp_rx(struct subuff *sub) {
     // get icmp
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
@@ -37,9 +35,6 @@ drop_pkt:
 }
 
 void icmp_reply(struct subuff *sub) {
-    //FIXME: implement your ICMP reply implementation here
-    // preapre an ICMP response buffer
-    // send it out on ip_ouput(...)
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
     struct icmp *ic  = (struct icmp *)(ih->data);
     sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + IP_PAYLOAD_LEN(ih));
