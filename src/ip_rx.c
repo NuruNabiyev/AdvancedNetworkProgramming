@@ -43,7 +43,7 @@ int ip_rx(struct subuff *sub) {
             icmp_rx(sub);
             return 0;
         case IPP_TCP:
-            printf("incoming TCP packet\n");
+            debug_ip("incoming TCP packet\n");
             tcp_rx(sub);
             goto drop_pkt;
         default:
