@@ -15,6 +15,8 @@ uint32_t ip_str_to_h32(const char *addr);
 void     u32_ip_to_str(char *, uint32_t daddr);
 void     print_trace(void);
 int      do_tcp_csum(uint8_t *data, int length, uint16_t protocol, uint32_t saddr, uint32_t daddr);
+// dumps whole buffer as hex
+void     dump_hex(void *buff, int len);
 
 #define ANP_MIN(a, b) (a < b ? a : b)
 

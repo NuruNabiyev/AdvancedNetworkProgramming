@@ -90,3 +90,12 @@ void print_trace(void) {
     puts("");
     free(strings);
 }
+
+void dump_hex(void *buff, int len){
+    printf("DUMPING_HEX: [");
+    for(int i = 0; i < len; i++)
+    {
+        printf("%02x ", ((unsigned char*)buff)[i]);
+    }
+    printf("]\n");
+}
