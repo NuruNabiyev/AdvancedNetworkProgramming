@@ -42,7 +42,7 @@ void tcp_rx(struct subuff *sub);
 void tcp_tx(struct subuff *sub);
 
 static inline void debug_tcp(struct tcp_hdr *tcp) {
-    printf("TCP_DUMP8: "
+    printf("TCP_DUMP: "
            "src_port %hu, dest_port %hu, "
            "seq_num %u, ack_num %u, "
            "data offset %i bytes, reserved %i "

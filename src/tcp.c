@@ -14,7 +14,8 @@ void tcp_rx(struct subuff *sub) {
     debug_tcp(tcp);
 
     if (tcp->syn == 1) {
-        socket(AF_INET, SOCK_STREAM, 0);
+        // socket(AF_INET, SOCK_STREAM, 0);
+        // todo and connect?
     }
 }
 

@@ -6,9 +6,7 @@
 #include "socket.h"
 
 struct sock_info *init_sock() {
-    struct sock_info *sock_ptr;
-    // i get segfault, todo
-    memset(sock_ptr, 0, sizeof(struct sock_info));
+    struct sock_info *sock_ptr = calloc(sizeof(*sock_ptr), 1);
     sock_ptr->fd = 1234567 + 123; // some random file descriptor
     sock_ptr->state = SOCK_CLOSED; // closed in the beginning
     return sock_ptr;

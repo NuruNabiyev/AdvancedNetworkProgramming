@@ -49,10 +49,8 @@ int socket(int domain, int type, int protocol) {
         return _socket(domain, type, protocol);
     }
 
-//     struct sock_info *si = init_sock(); // todo
-//     return si->fd;
-
-    return -ENOSYS;
+     struct sock_info *si = init_sock();
+     return si->fd;
 }
 
 // TODO: ANP milestone 3 -- implement the connect call
