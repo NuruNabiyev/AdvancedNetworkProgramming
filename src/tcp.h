@@ -41,4 +41,18 @@ void tcp_rx(struct subuff *sub);
  */
 void tcp_tx(struct subuff *sub);
 
+static inline void debug_tcp(struct tcp_hdr *tcp) {
+    printf("TCP_DUMP8: "
+           "src_port %hu, dest_port %hu, "
+           "seq_num %u, ack_num %u, "
+           "data offset %i bytes, reserved %i "
+           "urg %i ack %i push %i rst %i syn %i, fin %i extra %i, "
+           "window %u, checksum %hx\n\n",
+           htons(tcp->src_port), htons(tcp->dest_port),
+           ntohl(tcp->seq_num), tcp->ack_num,   // todo ack should be converted too?
+           tcp->data_offset * 4, tcp->reserved,
+           tcp->urg, tcp->ack, tcp->push, tcp->rst, tcp->syn, tcp->fin, tcp->extra,
+           htons(tcp->window), htons(tcp->csum));
+}
+
 #endif //ANPNETSTACK_TCP_H

@@ -6,6 +6,7 @@
 #include "linklist.h"
 #include "anpwrapper.h"
 #include "init.h"
+#include "socket.h"
 
 
 static int (*__start_main)(int (*main) (int, char **, char **), int argc, \
@@ -34,14 +35,23 @@ static int is_socket_supported(int domain, int type, int protocol) {
     return 1;
 }
 
-// TODO: ANP milestone 3 -- implement the socket call
+/**
+ * Initializes socket
+ * @param domain AF_INET
+ * @param type SOCK_STREAM
+ * @param protocol 0
+ * @return File descriptor
+ */
 int socket(int domain, int type, int protocol) {
     printf("int socket(int domain %d, int type %d, int protocol %d) \n",domain, type, protocol);
     if (!is_socket_supported(domain, type, protocol)) {
         // if this is not what anpnetstack support, let it go, let it go!
         return _socket(domain, type, protocol);
     }
-    //TODO: implement your logic here
+
+//     struct sock_info *si = init_sock(); // todo
+//     return si->fd;
+
     return -ENOSYS;
 }
 

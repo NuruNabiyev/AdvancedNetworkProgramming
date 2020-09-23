@@ -7,13 +7,18 @@
 
 #include "systems_headers.h"
 
+#define SOCK_CLOSED 0
+#define SOCK_CONNECTING 1
+#define SOCK_LISTENING 2
+#define SOCK_ESTABLISHED 3
+
 /**
  * Holds all sockets of this program and connections states
  */
 struct sock_info {
     // todo include linklist to save other sockets for this computer
     // should be unique for this program
-    uint32_t fd;
+    uint32_t fd; // todo lowest-numbered file descriptor not currently open for the process
     uint8_t state;  // Closed (0) Connecting(1) Listening(2) Established(3)
     // local ip and port
     uint32_t lip;
@@ -24,17 +29,20 @@ struct sock_info {
 }__attribute__((packed));
 
 /**
- * Initializes socket for two computers.
+ * Initializes socket for this computer.
  * Also generates FD (todo check whether it existed before or not)
+ */
+struct sock_info *init_sock();
+
+/**
+ * todo should be called just before TCP's connect
+ * todo set state to connecting
  * @param lip is local ip of this computer
  * @param lport is local port
  * @param rip is remote ip that we are willing to connect
  * @param rport is remote port
- * @return newly created socket and add todo to list of other sockets
  */
-struct sock_info *init_sock(uint32_t lip,
-                            uint16_t lport,
-                            uint32_t rip,
-                            uint16_t rport);
+void *connect_sock(uint32_t lip, uint16_t lport,
+                   uint32_t rip, uint16_t rport);
 
 #endif //ANPNETSTACK_SOCKET_H
