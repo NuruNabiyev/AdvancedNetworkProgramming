@@ -6,6 +6,7 @@
 #define ANPNETSTACK_SOCKET_H
 
 #include "systems_headers.h"
+#include "linklist.h"
 
 #define SOCK_CLOSED 0
 #define SOCK_CONNECTING 1
@@ -17,6 +18,7 @@
  */
 struct sock_info {
     // todo include linklist to save other sockets for this computer
+    struct list_head list; 
     // should be unique for this program
     int fd; // todo lowest-numbered file descriptor not currently open for the process
     uint8_t state;  // Closed (0) Connecting(1) Listening(2) Established(3)

@@ -6,7 +6,7 @@
 #include "socket.h"
 
 struct sock_info *init_sock() {
-    struct sock_info *sock_ptr = calloc(sizeof(*sock_ptr), 1);
+    struct sock_info *sock_ptr = calloc(1, sizeof(struct sock_info));
     sock_ptr->fd = get_random_number(); // random file descriptor in range of 1B-2B
     sock_ptr->state = SOCK_CLOSED; // closed in the beginning
     return sock_ptr;

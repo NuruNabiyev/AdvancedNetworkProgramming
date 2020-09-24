@@ -8,6 +8,7 @@
 #include "init.h"
 #include "socket.h"
 
+static LIST_HEAD(fd_cache);
 
 static int (*__start_main)(int (*main) (int, char **, char **), int argc, \
         char ** ubp_av, void (*init) (void), void (*fini) (void),            \
@@ -49,8 +50,10 @@ int socket(int domain, int type, int protocol) {
         return _socket(domain, type, protocol);
     }
 
-     struct sock_info *si = init_sock();
-     return si->fd;
+    struct sock_info *si = init_sock(); // save this sock_info in fd_cache
+    list_init(&si->list);
+    list_add_tail(&si->list, &fd_cache);
+    return si->fd;
 }
 
 // TODO: ANP milestone 3 -- implement the connect call
