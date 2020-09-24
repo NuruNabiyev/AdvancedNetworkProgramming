@@ -42,6 +42,18 @@ bool check_sockfd(int fd) {
     return is_anp_sockfd;
 }
 
+struct sock_info *get_sock_info(int fd) {
+    struct list_head *item;
+    struct sock_info *entry;
+    list_for_each(item, &fd_cache) {
+        entry = list_entry(item, struct sock_info, list);
+        if (fd == entry->fd) {
+            return entry;
+        }
+    }
+    return NULL;
+}
+
 // Helper function in case we need it later.
 void free_fc_cache() {
     struct list_head *item, *tmp;

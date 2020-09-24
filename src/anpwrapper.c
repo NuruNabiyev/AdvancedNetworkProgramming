@@ -8,15 +8,18 @@
 #include "init.h"
 #include "socket.h"
 
-static int (*__start_main)(int (*main) (int, char **, char **), int argc, \
-        char ** ubp_av, void (*init) (void), void (*fini) (void),            \
-        void (*rtld_fini) (void), void (*stack_end));
+static int (*__start_main)(int (*main)(int, char **, char **), int argc, \
+        char **ubp_av, void (*init)(void), void (*fini)(void), \
+        void (*rtld_fini)(void), void (*stack_end));
 
 static ssize_t (*_send)(int fd, const void *buf, size_t n, int flags) = NULL;
-static ssize_t (*_recv)(int fd, void *buf, size_t n, int flags)       = NULL;
+
+static ssize_t (*_recv)(int fd, void *buf, size_t n, int flags) = NULL;
 
 static int (*_connect)(int sockfd, const struct sockaddr *addr, socklen_t addrlen) = NULL;
+
 static int (*_socket)(int domain, int type, int protocol) = NULL;
+
 static int (*_close)(int sockfd) = NULL;
 
 static int is_socket_supported(int domain, int type, int protocol) {
@@ -42,7 +45,7 @@ static int is_socket_supported(int domain, int type, int protocol) {
  * @return File descriptor
  */
 int socket(int domain, int type, int protocol) {
-    printf("int socket(int domain %d, int type %d, int protocol %d) \n",domain, type, protocol);
+    printf("int socket(int domain %d, int type %d, int protocol %d) \n", domain, type, protocol);
     if (!is_socket_supported(domain, type, protocol)) {
         // if this is not what anpnetstack support, let it go, let it go!
         return _socket(domain, type, protocol);
@@ -54,16 +57,33 @@ int socket(int domain, int type, int protocol) {
 }
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
-    printf("CONNECT CALLED\n");
+    printf("CONNECT CALLED:\n");
 
     if (!check_sockfd(sockfd)) {
         // the default path
         return _connect(sockfd, addr, addrlen);
     }
 
+    // retrieve port and ip and prepare current sock_info
+    char rips[NI_MAXHOST], rports[NI_MAXSERV];
+    int rc = getnameinfo(addr, addrlen, rips, sizeof(rips), rports, sizeof(rports),
+                         NI_NUMERICHOST | NI_NUMERICSERV);
+    printf("rc %i, host %s, port %s\n", rc, rips, rports);
+    struct sockaddr_in sa;
+    inet_pton(AF_INET, rips, &(sa.sin_addr));
+    uint32_t rip = htonl(sa.sin_addr.s_addr);
+    uint16_t rport = atoi(rports);
+    printf("retrieved remote ip: %hhu.%hhu.%hhu.%hhu, remote port: %i\n",
+           rip >> 24, rip >> 16, rip >> 8, rip >> 0, rport);
+
     // get our socket
     // populate with local ip/port and remote ip/port
     // set state CONNECTING
+    struct sock_info *si = get_sock_info(sockfd);
+    si->rip = rip;
+    si->rport = rport;
+    si->state = SOCK_CONNECTING;
+    // todo setup local ip and local port
 
     // do 3way handshake
     // prepare TCP struct with related fields in correct network byte order  and checksum
@@ -86,7 +106,7 @@ ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
     return _send(sockfd, buf, len, flags);
 }
 
-ssize_t recv (int sockfd, void *buf, size_t len, int flags) {
+ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
     //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
     bool is_anp_sockfd = false;
     if (is_anp_sockfd) {
@@ -97,7 +117,7 @@ ssize_t recv (int sockfd, void *buf, size_t len, int flags) {
     return _recv(sockfd, buf, len, flags);
 }
 
-int close (int sockfd) {
+int close(int sockfd) {
     //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
     bool is_anp_sockfd = false;
     if (is_anp_sockfd) {
@@ -111,9 +131,9 @@ int close (int sockfd) {
 void _function_override_init() {
     printf("void _function_override_init() \n");
     __start_main = dlsym(RTLD_NEXT, "__libc_start_main");
-    _socket      = dlsym(RTLD_NEXT, "socket");
-    _connect     = dlsym(RTLD_NEXT, "connect");
-    _send        = dlsym(RTLD_NEXT, "send");
-    _recv        = dlsym(RTLD_NEXT, "recv");
-    _close       = dlsym(RTLD_NEXT, "close");
+    _socket = dlsym(RTLD_NEXT, "socket");
+    _connect = dlsym(RTLD_NEXT, "connect");
+    _send = dlsym(RTLD_NEXT, "send");
+    _recv = dlsym(RTLD_NEXT, "recv");
+    _close = dlsym(RTLD_NEXT, "close");
 }

@@ -61,6 +61,11 @@ bool check_sockfd(int fd);
  */
 void free_fc_cache();
 
+/**
+ * @return socket info based on @param fd
+ */
+struct sock_info *get_sock_info(int fd);
+
 static inline int get_random_number() {
     srand(time(0)); // seed random number.
     int upper = 2000000;
