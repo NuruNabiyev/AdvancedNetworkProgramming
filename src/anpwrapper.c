@@ -8,7 +8,6 @@
 #include "init.h"
 #include "socket.h"
 
-
 static int (*__start_main)(int (*main) (int, char **, char **), int argc, \
         char ** ubp_av, void (*init) (void), void (*fini) (void),            \
         void (*rtld_fini) (void), void (*stack_end));
@@ -49,14 +48,15 @@ int socket(int domain, int type, int protocol) {
         return _socket(domain, type, protocol);
     }
 
-     struct sock_info *si = init_sock();
-     return si->fd;
+    struct sock_info *si = init_sock(); // save this sock_info in fd_cache
+    add_sockfd_to_cache(si);
+    return si->fd;
 }
 
 // TODO: ANP milestone 3 -- implement the connect call
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
-    bool is_anp_sockfd = false;
+    bool is_anp_sockfd = check_sockfd(sockfd);
     if (is_anp_sockfd) {
         //TODO: implement your logic here
         return -ENOSYS;

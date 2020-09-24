@@ -6,6 +6,7 @@
 #define ANPNETSTACK_SOCKET_H
 
 #include "systems_headers.h"
+#include "linklist.h"
 
 #define SOCK_CLOSED 0
 #define SOCK_CONNECTING 1
@@ -17,6 +18,7 @@
  */
 struct sock_info {
     // todo include linklist to save other sockets for this computer
+    struct list_head list; 
     // should be unique for this program
     int fd; // todo lowest-numbered file descriptor not currently open for the process
     uint8_t state;  // Closed (0) Connecting(1) Listening(2) Established(3)
@@ -44,6 +46,21 @@ struct sock_info *init_sock();
  */
 void *connect_sock(uint32_t lip, uint16_t lport,
                    uint32_t rip, uint16_t rport);
+
+/*
+ * Adds a given socket to the fd_cache
+ */
+void add_sockfd_to_cache(struct sock_info *si);
+
+/*
+ * Checks if a given socket is already in the cache.
+ */
+bool check_sockfd(int fd);
+
+/*
+ * Frees the cache from all the sockets.
+ */
+void free_fc_cache();
 
 static inline int get_random_number(){
     srand(time(0)); // seed random number.
