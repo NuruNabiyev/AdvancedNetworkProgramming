@@ -61,7 +61,7 @@ bool check_sockfd(int fd);
  */
 void free_fc_cache();
 
-static inline int get_random_number(){
+static inline int get_random_number() {
     srand(time(0)); // seed random number.
     int upper = 2000000;
     int lower = 1000000;
