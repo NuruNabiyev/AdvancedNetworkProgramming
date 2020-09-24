@@ -46,6 +46,7 @@ void *connect_sock(uint32_t lip, uint16_t lport,
                    uint32_t rip, uint16_t rport);
 
 static inline int get_random_number(){
+    srand(time(0)); // seed random number.
     int upper = 2000000;
     int lower = 1000000;
     int num = (rand() % (upper - lower + 1)) + lower;
