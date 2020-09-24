@@ -102,6 +102,17 @@ int close (int sockfd) {
     return _close(sockfd);
 }
 
+// Helper function in case we need it later.
+void free_fc_cache(){
+    struct list_head *item, *tmp;
+    struct arp_cache_entry *entry;
+    list_for_each_safe(item, tmp, &fd_cache) {
+        entry = list_entry(item, struct sock_info, list);
+        list_del(item);
+        free(entry);
+    }
+}
+
 void _function_override_init() {
     printf("void _function_override_init() \n");
     __start_main = dlsym(RTLD_NEXT, "__libc_start_main");
