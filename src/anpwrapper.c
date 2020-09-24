@@ -105,7 +105,7 @@ int close (int sockfd) {
 // Helper function in case we need it later.
 void free_fc_cache(){
     struct list_head *item, *tmp;
-    struct arp_cache_entry *entry;
+    struct sock_info *entry;
     list_for_each_safe(item, tmp, &fd_cache) {
         entry = list_entry(item, struct sock_info, list);
         list_del(item);
