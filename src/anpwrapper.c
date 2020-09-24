@@ -8,8 +8,6 @@
 #include "init.h"
 #include "socket.h"
 
-static LIST_HEAD(fd_cache);
-
 static int (*__start_main)(int (*main) (int, char **, char **), int argc, \
         char ** ubp_av, void (*init) (void), void (*fini) (void),            \
         void (*rtld_fini) (void), void (*stack_end));
@@ -50,26 +48,15 @@ int socket(int domain, int type, int protocol) {
         return _socket(domain, type, protocol);
     }
 
-    struct sock_info *si = init_sock(&fd_cache); // save this sock_info in fd_cache
-    list_init(&si->list);
-    list_add_tail(&si->list, &fd_cache);
+    struct sock_info *si = init_sock(); // save this sock_info in fd_cache
+    add_sockfd_to_cache(si);
     return si->fd;
 }
 
 // TODO: ANP milestone 3 -- implement the connect call
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
-    struct list_head *item;
-    struct sock_info *entry;
-    bool is_anp_sockfd = false;
-    list_for_each(item, &fd_cache) {
-        entry = list_entry(item, struct sock_info, list);
-        if (sockfd == entry->fd) {
-            is_anp_sockfd = true;
-            break;
-        }
-    }
-
+    bool is_anp_sockfd = check_sockfd(sockfd);
     if (is_anp_sockfd) {
         //TODO: implement your logic here
         return -ENOSYS;

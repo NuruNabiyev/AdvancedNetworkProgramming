@@ -47,6 +47,10 @@ struct sock_info *init_sock();
 void *connect_sock(uint32_t lip, uint16_t lport,
                    uint32_t rip, uint16_t rport);
 
+void add_sockfd_to_cache(struct sock_info *si);
+
+bool check_sockfd(int fd);
+
 static inline int get_random_number(){
     srand(time(0)); // seed random number.
     int upper = 2000000;
