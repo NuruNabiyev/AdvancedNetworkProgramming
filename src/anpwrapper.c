@@ -50,7 +50,7 @@ int socket(int domain, int type, int protocol) {
         return _socket(domain, type, protocol);
     }
 
-    struct sock_info *si = init_sock(); // save this sock_info in fd_cache
+    struct sock_info *si = init_sock(&fd_cache); // save this sock_info in fd_cache
     list_init(&si->list);
     list_add_tail(&si->list, &fd_cache);
     return si->fd;
