@@ -18,7 +18,7 @@
 struct sock_info {
     // todo include linklist to save other sockets for this computer
     // should be unique for this program
-    uint32_t fd; // todo lowest-numbered file descriptor not currently open for the process
+    int fd; // todo lowest-numbered file descriptor not currently open for the process
     uint8_t state;  // Closed (0) Connecting(1) Listening(2) Established(3)
     // local ip and port
     uint32_t lip;
@@ -44,5 +44,12 @@ struct sock_info *init_sock();
  */
 void *connect_sock(uint32_t lip, uint16_t lport,
                    uint32_t rip, uint16_t rport);
+
+static inline int get_random_number(){
+    int upper = 2000000;
+    int lower = 1000000;
+    int num = (rand() % (upper - lower + 1)) + lower;
+    return num;
+}
 
 #endif //ANPNETSTACK_SOCKET_H
