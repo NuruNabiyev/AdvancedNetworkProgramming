@@ -55,12 +55,16 @@ int socket(int domain, int type, int protocol) {
 
 // TODO: ANP milestone 3 -- implement the connect call
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+    printf("CONNECT CALLED\n");
     //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
     bool is_anp_sockfd = check_sockfd(sockfd);
     if (is_anp_sockfd) {
+        printf("is_anp_sockfd true\n");
         //TODO: implement your logic here
         return -ENOSYS;
     }
+    printf("is_anp_sockfd default\n");
+
     // the default path
     return _connect(sockfd, addr, addrlen);
 }
