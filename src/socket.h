@@ -47,9 +47,20 @@ struct sock_info *init_sock();
 void *connect_sock(uint32_t lip, uint16_t lport,
                    uint32_t rip, uint16_t rport);
 
+/*
+ * Adds a given socket to the fd_cache
+ */
 void add_sockfd_to_cache(struct sock_info *si);
 
+/*
+ * Checks if a given socket is already in the cache.
+ */
 bool check_sockfd(int fd);
+
+/*
+ * Frees the cache from all the sockets.
+ */
+void free_fc_cache();
 
 static inline int get_random_number(){
     srand(time(0)); // seed random number.

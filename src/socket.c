@@ -42,3 +42,14 @@ bool check_sockfd(int fd){
     return is_anp_sockfd;
 }
 
+// Helper function in case we need it later.
+void free_fc_cache(){
+    struct list_head *item, *tmp;
+    struct sock_info *entry;
+    list_for_each_safe(item, tmp, &fd_cache) {
+        entry = list_entry(item, struct sock_info, list);
+        list_del(item);
+        free(entry);
+    }
+}
+
