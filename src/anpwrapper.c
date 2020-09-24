@@ -59,7 +59,17 @@ int socket(int domain, int type, int protocol) {
 // TODO: ANP milestone 3 -- implement the connect call
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
+    struct list_head *item;
+    struct sock_info *entry;
     bool is_anp_sockfd = false;
+    list_for_each(item, &fd_cache) {
+        entry = list_entry(item, struct sock_info, list);
+        if (sockfd == entry->fd) {
+            is_anp_sockfd = true;
+            break;
+        }
+    }
+
     if (is_anp_sockfd) {
         //TODO: implement your logic here
         return -ENOSYS;
