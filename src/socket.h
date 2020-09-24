@@ -17,10 +17,9 @@
  * Holds all sockets of this program and connections states
  */
 struct sock_info {
-    // todo include linklist to save other sockets for this computer
-    struct list_head list; 
+    struct list_head list;
     // should be unique for this program
-    int fd; // todo lowest-numbered file descriptor not currently open for the process
+    int fd;
     uint8_t state;  // Closed (0) Connecting(1) Listening(2) Established(3)
     // local ip and port
     uint32_t lip;
@@ -32,7 +31,7 @@ struct sock_info {
 
 /**
  * Initializes socket for this computer.
- * Also generates FD (todo check whether it existed before or not)
+ * Also generates FD
  */
 struct sock_info *init_sock();
 
