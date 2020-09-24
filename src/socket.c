@@ -16,7 +16,7 @@ struct sock_info *init_sock(struct list_head *fd_cache) {
     
     struct sock_info *sock_ptr = calloc(1, sizeof(struct sock_info));
     if(size_counter > 0){ sock_ptr->fd = entry->fd + 1; } 
-    else{ sock_ptr->fd = get_random_number(); }
+    else                { sock_ptr->fd = get_random_number(); }
     sock_ptr->state = SOCK_CLOSED; // closed in the beginning
     return sock_ptr;
 }
