@@ -7,6 +7,12 @@
 #include "anpwrapper.h"
 #include "init.h"
 #include "socket.h"
+#include "tcp.h"
+#include "utilities.h"
+#include "subuff.h"
+#include "ethernet.h"
+#include "route.h"
+#include "anp_netdev.h"
 
 static int (*__start_main)(int (*main)(int, char **, char **), int argc, \
         char **ubp_av, void (*init)(void), void (*fini)(void), \
@@ -39,7 +45,7 @@ static int is_socket_supported(int domain, int type, int protocol) {
 /*
  * Parses local and remote ip and ports, assigns to current socket_info
  */
-static void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, socklen_t addrlen) {
+void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, socklen_t addrlen) {
     // retrieve port and ip and prepare current sock_info
     char rips[NI_MAXHOST], rports[NI_MAXSERV];
     int rc = getnameinfo(addr, addrlen, rips, sizeof(rips), rports, sizeof(rports),
@@ -63,6 +69,34 @@ static void assign_sockets(struct sock_info *current_si, const struct sockaddr *
     // debug
     debug_ip(current_si->lip);
     debug_ip(current_si->rip);
+}
+
+struct tcp_hdr *create_syn_tcp(const struct sock_info *si) {
+    struct tcp_hdr *syntcp = calloc(1, sizeof(struct tcp_hdr));
+    syntcp->src_port = ntohs(si->lport); //ntohs(53224);
+    syntcp->dest_port = ntohs(si->rport); // ntohs(43211);
+    syntcp->seq_num = htonl(92957434); //todo generate yourself and save SYN in sockinfo
+    syntcp->ack_num = 0;
+    syntcp->data_offset = 10;
+    syntcp->reserved = 0;
+    syntcp->syn = 1;
+    syntcp->window = ntohs(64240);
+
+    uint8_t *tcp_as_data = (uint8_t *) syntcp;
+
+    char saddr[NI_MAXHOST] = "10.0.0.5";
+    struct sockaddr_in saddr_loc;
+    inet_pton(AF_INET, saddr, &(saddr_loc.sin_addr));
+    uint32_t saddress = htonl(saddr_loc.sin_addr.s_addr);
+
+    char daddr[NI_MAXHOST] = "10.0.0.4";
+    struct sockaddr_in daddr_loc2;
+    inet_pton(AF_INET, daddr, &(daddr_loc2.sin_addr));
+    uint32_t daddrerss = htonl(daddr_loc2.sin_addr.s_addr);
+    uint16_t csum = do_tcp_csum(tcp_as_data, 10, 6, saddress, daddrerss);
+    syntcp->csum = ntohs(csum);
+
+    return syntcp;
 }
 
 /**
@@ -96,9 +130,28 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     assign_sockets(current_si, addr, addrlen);
     current_si->state = SOCK_CONNECTING;
 
-    // TODO MATTHIAS
-    // do 3way handshake
     // prepare TCP struct with related fields in correct network byte order  and checksum
+    struct tcp_hdr *syntcp = create_syn_tcp(current_si);
+
+    // -------- ???? ---------
+
+//    struct subuff *sub = alloc_sub(ETH_HDR_LEN + TCP_LEN);
+//    if (!sub) {
+//        printf("Error: allocation of the arp sub in request failed \n");
+//        return -ENOSYS;
+//    }
+//    sub_reserve(sub, ETH_HDR_LEN + TCP_LEN);
+//    sub->protocol = htons(ETH_P_IP);
+
+    struct rtentry *lo_rt = route_lookup(current_si->lip);
+    printf("anp_r %hhx:%hhx:%hhx:%hhx:%hhx:%hhx \n",
+           lo_rt->dev->hwaddr[0],
+           lo_rt->dev->hwaddr[1],
+           lo_rt->dev->hwaddr[2],
+           lo_rt->dev->hwaddr[3],
+           lo_rt->dev->hwaddr[4],
+           lo_rt->dev->hwaddr[5]);
+
     // add proper IP and Ethernet headers
     // add to sub
     // send to tcp_tx (or just tod ip_output directly, up to you)
