@@ -8,15 +8,17 @@
 #include "systems_headers.h"
 #include "linklist.h"
 
+// todo add other states, rfc page 21
+//  also look at diagram at page 23
 #define SOCK_CLOSED 0
 #define SOCK_CONNECTING 1
-#define SOCK_LISTENING 2
-#define SOCK_ESTABLISHED 3
+#define SOCK_ESTABLISHED 2
 
 /**
  * Holds all sockets of this program and connections states
  */
 struct sock_info {
+    // todo add other important stuff (rfc page 19-21, and 53)
     struct list_head list;
     // should be unique for this program
     int fd;
@@ -72,6 +74,10 @@ static inline int get_random_number() {
     int lower = 1000000;
     int num = (rand() % (upper - lower + 1)) + lower;
     return num;
+}
+
+static inline void debug_ip(uint32_t ip) {
+    printf("ip: %hhu.%hhu.%hhu.%hhu\n", ip >> 24, ip >> 16, ip >> 8, ip >> 0);
 }
 
 #endif //ANPNETSTACK_SOCKET_H

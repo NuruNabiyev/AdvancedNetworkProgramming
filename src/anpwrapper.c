@@ -23,7 +23,6 @@ static int (*_socket)(int domain, int type, int protocol) = NULL;
 static int (*_close)(int sockfd) = NULL;
 
 static int is_socket_supported(int domain, int type, int protocol) {
-    printf("static int is_socket_supported(int domain %d , int type %d, int protocol %d)\n", domain, type, protocol);
     if (domain != AF_INET) {
         return 0;
     }
@@ -37,6 +36,35 @@ static int is_socket_supported(int domain, int type, int protocol) {
     return 1;
 }
 
+/*
+ * Parses local and remote ip and ports, assigns to current socket_info
+ */
+static void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, socklen_t addrlen) {
+    // retrieve port and ip and prepare current sock_info
+    char rips[NI_MAXHOST], rports[NI_MAXSERV];
+    int rc = getnameinfo(addr, addrlen, rips, sizeof(rips), rports, sizeof(rports),
+                         NI_NUMERICHOST | NI_NUMERICSERV);
+    printf("rc %i, host %s, port %s\n", rc, rips, rports);
+    struct sockaddr_in sa;
+    inet_pton(AF_INET, rips, &(sa.sin_addr));
+    uint32_t rip = htonl(sa.sin_addr.s_addr);
+    uint16_t rport = atoi(rports);
+    current_si->rip = rip;
+    current_si->rport = rport;
+
+    // assign local ip and port
+    char lips[NI_MAXHOST] = "10.0.0.4";
+    struct sockaddr_in sa_loc;
+    inet_pton(AF_INET, lips, &(sa_loc.sin_addr));
+    uint32_t lip = htonl(sa_loc.sin_addr.s_addr);
+    current_si->lip = lip;
+    current_si->lport = rport;  // same as remote
+
+    // debug
+    debug_ip(current_si->lip);
+    debug_ip(current_si->rip);
+}
+
 /**
  * Initializes socket
  * @param domain AF_INET
@@ -45,7 +73,6 @@ static int is_socket_supported(int domain, int type, int protocol) {
  * @return File descriptor
  */
 int socket(int domain, int type, int protocol) {
-    printf("int socket(int domain %d, int type %d, int protocol %d) \n", domain, type, protocol);
     if (!is_socket_supported(domain, type, protocol)) {
         // if this is not what anpnetstack support, let it go, let it go!
         return _socket(domain, type, protocol);
@@ -64,32 +91,17 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
         return _connect(sockfd, addr, addrlen);
     }
 
-    // retrieve port and ip and prepare current sock_info
-    char rips[NI_MAXHOST], rports[NI_MAXSERV];
-    int rc = getnameinfo(addr, addrlen, rips, sizeof(rips), rports, sizeof(rports),
-                         NI_NUMERICHOST | NI_NUMERICSERV);
-    printf("rc %i, host %s, port %s\n", rc, rips, rports);
-    struct sockaddr_in sa;
-    inet_pton(AF_INET, rips, &(sa.sin_addr));
-    uint32_t rip = htonl(sa.sin_addr.s_addr);
-    uint16_t rport = atoi(rports);
-    printf("retrieved remote ip: %hhu.%hhu.%hhu.%hhu, remote port: %i\n",
-           rip >> 24, rip >> 16, rip >> 8, rip >> 0, rport);
+    // get our socket, populate with local ip/port and remote ip/port, set state CONNECTING
+    struct sock_info *current_si = get_sock_info(sockfd);
+    assign_sockets(current_si, addr, addrlen);
+    current_si->state = SOCK_CONNECTING;
 
-    // get our socket
-    // populate with local ip/port and remote ip/port
-    // set state CONNECTING
-    struct sock_info *si = get_sock_info(sockfd);
-    si->rip = rip;
-    si->rport = rport;
-    si->state = SOCK_CONNECTING;
-    // todo setup local ip and local port
-
+    // TODO MATTHIAS
     // do 3way handshake
     // prepare TCP struct with related fields in correct network byte order  and checksum
     // add proper IP and Ethernet headers
     // add to sub
-    // send to tcp_tx (or just ip_output)
+    // send to tcp_tx (or just tod ip_output directly, up to you)
 
     return -ENOSYS;
 }
