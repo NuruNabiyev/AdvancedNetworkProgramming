@@ -14,6 +14,7 @@
 #include "route.h"
 #include "anp_netdev.h"
 #include "arp.h"
+#include "ip.h"
 
 static int (*__start_main)(int (*main)(int, char **, char **), int argc, \
         char **ubp_av, void (*init)(void), void (*fini)(void), \
@@ -68,24 +69,25 @@ void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, s
     current_si->lport = rport;  // same as remote
 
     // debug
-    debug_ip(current_si->lip);
-    debug_ip(current_si->rip);
+    //debug_ip(current_si->lip);
+    //debug_ip(current_si->rip);
 }
 
-struct tcp_hdr *create_syn_tcp(const struct sock_info *si) {
-    struct tcp_hdr *syntcp = calloc(1, sizeof(struct tcp_hdr));
-    syntcp->src_port = ntohs(si->lport); //ntohs(53224);
-    syntcp->dest_port = ntohs(si->rport); // ntohs(43211);
-    syntcp->seq_num = htonl(92957434); //todo generate yourself and save SYN in sockinfo
-    syntcp->data_offset = 10;
-    syntcp->syn = 1;
-    syntcp->window = ntohs(64240);
+void update_tcp(const struct sock_info *si, struct tcp_hdr *tcpHdr) {
+    //struct tcp_hdr *syntcp = calloc(1, sizeof(struct tcp_hdr));
+    tcpHdr->src_port = (si->lport); //ntohs(53224);
+    tcpHdr->dest_port = (si->rport); // ntohs(43211);
+    tcpHdr->seq_num = (92957434); //todo generate yourself and save SYN in sockinfo
+    tcpHdr->data_offset = 10;
+    tcpHdr->syn = 1;
+    tcpHdr->window = (64240);
 
-    uint16_t csum = do_tcp_csum((uint8_t *) syntcp, 40, 6, si->lip, si->rip);
-    syntcp->csum = ntohs(csum);
-    dump_hex(syntcp, 40);
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, 6, si->lip, si->rip);
+    tcpHdr->csum = (csum);
+    printf("real tcp: ");
+    dump_hex(tcpHdr, 40);
 
-    return syntcp;
+    //return tcpHdr;
 }
 
 /**
@@ -120,15 +122,42 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     current_si->state = SOCK_CONNECTING;
 
     // search for destination mac address
-    struct rtentry *lo_rt = route_lookup(current_si->lip);
-    arp_request(current_si->lip, current_si->rip, lo_rt->dev);
+    struct rtentry *lo_rt = route_lookup(current_si->lip);  // this will give our gateway
+    arp_request(current_si->lip, current_si->rip, lo_rt->dev);  // send arp request and wait 1 second
     sleep(1);
     uint8_t *ui = (uint8_t *) arp_get_hwaddr(current_si->rip);
     printf("hw iss %2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx \n",
            ui[0], ui[1], ui[2], ui[3], ui[4], ui[5]);
 
+    // allocate sub
+    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
+    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
+    if (!sub) {
+        printf("Error: allocation of the arp sub in request failed \n");
+        return -1;
+    }
+    sub->protocol = htons(ETH_P_IP);
+    sub->dev = lo_rt->dev;
+    struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, 40);
     // prepare TCP struct with related fields in correct network byte order  and checksum
-    struct tcp_hdr *syntcp = create_syn_tcp(current_si);
+    update_tcp(current_si, syntcp);
+
+    // debug to see tcp and sub dumps
+    struct iphdr *ih = IP_HDR_FROM_SUB(sub);
+    struct tcp_hdr *tcp = (struct tcp_hdr *) (ih->data);
+
+    printf("dump tcp: ");
+    dump_hex(tcp, 40);
+    debug_tcp(tcp);
+
+    printf("dump sub: ");
+    dump_hex(sub, 170);
+
+    sleep(10);
+    ip_output(current_si->rip, sub);
+    sleep(1);
+
+    //free_sub(sub);
 
     // add proper IP and Ethernet headers
     // add to sub
