@@ -74,9 +74,10 @@ void update_tcp(const struct sock_info *si, struct tcp_hdr *tcpHdr) {
     tcpHdr->data_offset = 10;
     tcpHdr->syn = 1;
     tcpHdr->window = ntohs(65495);
+    tcpHdr->csum = 0; 
 
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, ntohs(si->lip), ntohs(si->rip));
-    tcpHdr->csum = ntohs(csum);
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, htonl(si->lip), htonl(si->rip));
+    tcpHdr->csum = csum;
     printf("real tcp: ");
     dump_hex(tcpHdr, 40);
 }
