@@ -5,7 +5,6 @@
 #include "systems_headers.h"
 #include "linklist.h"
 #include "anpwrapper.h"
-#include "init.h"
 #include "socket.h"
 #include "tcp.h"
 #include "utilities.h"
@@ -13,10 +12,7 @@
 #include "ethernet.h"
 #include "route.h"
 #include "anp_netdev.h"
-#include "arp.h"
 #include "ip.h"
-#include "debug.h"
-#include "config.h"
 
 static int (*__start_main)(int (*main)(int, char **, char **), int argc, \
         char **ubp_av, void (*init)(void), void (*fini)(void), \
@@ -68,45 +64,24 @@ void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, s
     inet_pton(AF_INET, lips, &(sa_loc.sin_addr));
     uint32_t lip = htonl(sa_loc.sin_addr.s_addr);
     current_si->lip = lip;
-    current_si->lport = 13245; // can be what ever we want
+    current_si->lport = rport; // can be what ever we want
 }
 
 void update_tcp(const struct sock_info *si, struct tcp_hdr *tcpHdr) {
-    //struct tcp_hdr *syntcp = calloc(1, sizeof(struct tcp_hdr));
-    tcpHdr->src_port = ntohs(si->lport); //ntohs(53224);
-    tcpHdr->dest_port = ntohs(si->rport); // ntohs(43211);
+    tcpHdr->src_port = ntohs(si->lport);
+    tcpHdr->dest_port = ntohs(si->rport);
     tcpHdr->seq_num = htonl(92957434); //todo generate yourself and save SYN in sockinfo
     tcpHdr->data_offset = 10;
     tcpHdr->syn = 1;
     tcpHdr->window = ntohs(65495);
 
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, 6, si->lip, si->rip);
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, ntohs(si->lip), ntohs(si->rip));
     tcpHdr->csum = ntohs(csum);
     printf("real tcp: ");
     dump_hex(tcpHdr, 40);
 }
 
-struct anp_netdev *arp_gateway_and_dest(struct sock_info *current_si) {
-    // extract gateway ip
-    struct sockaddr_in gateway_sin;
-    inet_pton(AF_INET, ANP_IP_TAP_DEV, &(gateway_sin.sin_addr));
-    uint32_t gateway_ip = htonl(gateway_sin.sin_addr.s_addr);
-
-    struct rtentry *lo_rt = route_lookup(gateway_ip);
-    arp_request(current_si->lip, gateway_ip, lo_rt->dev);
-    sleep(1);
-
-    arp_request(current_si->lip, current_si->rip, lo_rt->dev);
-    sleep(1);
-    uint8_t *ui = (uint8_t *) arp_get_hwaddr(current_si->rip);
-    printf("rip iss %2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx \n",
-           ui[0], ui[1], ui[2], ui[3], ui[4], ui[5]);
-    uint8_t *ui2 = (uint8_t *) arp_get_hwaddr(gateway_ip);
-    printf("gateway iss %2hhx:%2hhx:%2hhx:%2hhx:%2hhx:%2hhx \n",
-           ui2[0], ui2[1], ui2[2], ui2[3], ui2[4], ui2[5]);
-}
-
-struct subuff *alloc_tcp_sub(const struct sock_info *current_si, struct anp_netdev *dev) {
+struct subuff *alloc_tcp_sub(const struct sock_info *current_si) {
     struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
     sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
     if (!sub) {
@@ -114,7 +89,6 @@ struct subuff *alloc_tcp_sub(const struct sock_info *current_si, struct anp_netd
         return NULL;
     }
     sub->protocol = IPP_TCP;
-    sub->dev = dev;
     struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, TCP_LEN);
     // prepare TCP struct with related fields in correct network byte order  and checksum
     update_tcp(current_si, syntcp);
@@ -164,15 +138,21 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     // give some time to devs to open wireshark/tcpdump
     sleep(5);
 
-    // search for destination and gateway mac addresses
-    struct anp_netdev *dev = arp_gateway_and_dest(current_si);
-    struct subuff *sub = alloc_tcp_sub(current_si, dev);
+    // try first one
+    struct subuff *sub = alloc_tcp_sub(current_si);
+    int ret = ip_output(current_si->rip, sub);
+    printf("ret is %i\n", ret);
 
-    sleep(1);
-    debug_ip_address(current_si->rip);
-    ip_output(current_si->rip, sub);
-    //sleep(5);
+    // if our cache is empty and arp in progress
+    if (ret == -11) {
+        sleep(3);
 
+        struct subuff *sub2 = alloc_tcp_sub(current_si);
+        int ret2 = ip_output(current_si->rip, sub2);
+        printf("ret2 is %i\n", ret2);
+    }
+
+    sleep(3);
     // todo the rest of the handshake (server will send to tcp_rx, so make this thread wait)
 
     //free_sub(sub);
