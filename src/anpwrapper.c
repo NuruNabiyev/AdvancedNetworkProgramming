@@ -67,10 +67,11 @@ void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, s
     current_si->lport = rport; // can be what ever we want
 }
 
-void update_tcp(const struct sock_info *si, struct tcp_hdr *tcpHdr) {
+void update_tcp(struct sock_info *si, struct tcp_hdr *tcpHdr) {
     tcpHdr->src_port = ntohs(si->lport);
     tcpHdr->dest_port = ntohs(si->rport);
     tcpHdr->seq_num = htonl(92957434); //todo generate yourself and save SYN in sockinfo
+    si->seq = tcpHdr->seq_num;
     tcpHdr->data_offset = 10;
     tcpHdr->syn = 1;
     tcpHdr->window = ntohs(65495);
@@ -137,16 +138,15 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     current_si->state = SOCK_CONNECTING;
 
     // give some time to devs to open wireshark/tcpdump
-    sleep(5);
+    sleep(1);
 
     // try first one
     struct subuff *sub = alloc_tcp_sub(current_si);
     int ret = ip_output(current_si->rip, sub);
-    printf("ret is %i\n", ret);
 
     // if our cache is empty and arp in progress
     if (ret == -11) {
-        sleep(3);
+        sleep(1);
 
         struct subuff *sub2 = alloc_tcp_sub(current_si);
         int ret2 = ip_output(current_si->rip, sub2);
@@ -154,8 +154,8 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     }
 
     sleep(3);
-    // todo the rest of the handshake (server will send to tcp_rx, so make this thread wait)
 
+    // todo is something goes wrong, free sub and re-transmit 5 times?
     //free_sub(sub);
     return -ENOSYS;
 }

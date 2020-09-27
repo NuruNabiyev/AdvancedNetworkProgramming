@@ -23,6 +23,7 @@ struct sock_info {
     // should be unique for this program
     int fd;
     uint8_t state;  // Closed (0) Connecting(1) Listening(2) Established(3)
+    uint32_t seq; // our last syn that hasn't been ACKed yet
     // local ip and port
     uint32_t lip;
     uint16_t lport;
@@ -67,6 +68,8 @@ void free_fc_cache();
  * @return socket info based on @param fd
  */
 struct sock_info *get_sock_info(int fd);
+
+struct sock_info *get_sock_info_by_seq(uint32_t seq);
 
 static inline int get_random_number() {
     srand(time(0)); // seed random number.
