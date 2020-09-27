@@ -6,6 +6,11 @@
 #include "utilities.h" // need bcause there is do_tcp_csum
 #include "anpwrapper.h"
 #include "socket.h"
+#include "socket.h"
+
+// todo this is going to be initialized to false again once another tcp comes in
+//  so we should use proper pthread locks
+volatile bool server_synack_ok = false;
 
 void tcp_rx(struct subuff *sub) {
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
@@ -27,9 +32,8 @@ void tcp_rx(struct subuff *sub) {
             printf("\n---NO SUCH ITEM FOUND---\n");
             goto dropkt;
         }
-
         printf("--------- CHECKSUM=%hx! --------\n", htons(check_csum));
-
+        server_synack_ok = true;
 
         //... send the final ACK here
     }
@@ -37,7 +41,8 @@ void tcp_rx(struct subuff *sub) {
     dropkt:
     // todo if checksum is not correct and we are dropping packet,
     //  then we should notify connect() to re-transmit
-    freesub(sub);
+    printf("todo drop packet");
+    //freesub(sub); // this throws error
 }
 
 void tcp_tx(struct subuff *sub) {

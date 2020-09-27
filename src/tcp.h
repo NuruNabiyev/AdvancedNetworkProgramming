@@ -7,6 +7,7 @@
 #include "subuff.h"
 
 #define TCP_LEN 40
+extern volatile bool server_synack_ok;
 
 struct tcp_hdr {
     uint16_t src_port;

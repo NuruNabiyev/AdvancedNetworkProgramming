@@ -75,7 +75,7 @@ void update_tcp(struct sock_info *si, struct tcp_hdr *tcpHdr) {
     tcpHdr->data_offset = 10;
     tcpHdr->syn = 1;
     tcpHdr->window = ntohs(65495);
-    tcpHdr->csum = 0; 
+    tcpHdr->csum = 0;
 
     uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, htonl(si->lip), htonl(si->rip));
     tcpHdr->csum = csum;
@@ -151,9 +151,10 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
         struct subuff *sub2 = alloc_tcp_sub(current_si);
         int ret2 = ip_output(current_si->rip, sub2);
         printf("ret2 is %i\n", ret2);
-    }
 
-    sleep(3);
+        while (!server_synack_ok) {}
+        printf("\n\nAWAKE - PROCEED TO SEND ACK \n\n");
+    }
 
     // todo is something goes wrong, free sub and re-transmit 5 times?
     //free_sub(sub);
