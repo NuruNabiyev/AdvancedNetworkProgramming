@@ -5,8 +5,14 @@
 #include "systems_headers.h"
 #include "linklist.h"
 #include "anpwrapper.h"
-#include "init.h"
 #include "socket.h"
+#include "tcp.h"
+#include "utilities.h"
+#include "subuff.h"
+#include "ethernet.h"
+#include "route.h"
+#include "anp_netdev.h"
+#include "ip.h"
 
 static int (*__start_main)(int (*main)(int, char **, char **), int argc, \
         char **ubp_av, void (*init)(void), void (*fini)(void), \
@@ -39,7 +45,7 @@ static int is_socket_supported(int domain, int type, int protocol) {
 /*
  * Parses local and remote ip and ports, assigns to current socket_info
  */
-static void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, socklen_t addrlen) {
+void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, socklen_t addrlen) {
     // retrieve port and ip and prepare current sock_info
     char rips[NI_MAXHOST], rports[NI_MAXSERV];
     int rc = getnameinfo(addr, addrlen, rips, sizeof(rips), rports, sizeof(rports),
@@ -58,11 +64,32 @@ static void assign_sockets(struct sock_info *current_si, const struct sockaddr *
     inet_pton(AF_INET, lips, &(sa_loc.sin_addr));
     uint32_t lip = htonl(sa_loc.sin_addr.s_addr);
     current_si->lip = lip;
-    current_si->lport = rport;  // same as remote
+    current_si->lport = rport; // can be what ever we want
+}
 
-    // debug
-    debug_ip(current_si->lip);
-    debug_ip(current_si->rip);
+void update_tcp(const struct sock_info *si, struct tcp_hdr *tcpHdr) {
+    tcpHdr->src_port = ntohs(si->lport);
+    tcpHdr->dest_port = ntohs(si->rport);
+    tcpHdr->seq_num = htonl(92957434); //todo generate yourself and save SYN in sockinfo
+    tcpHdr->data_offset = 10;
+    tcpHdr->syn = 1;
+    tcpHdr->window = ntohs(65495);
+
+    tcpHdr->csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, htonl(si->lip), htonl(si->rip));
+}
+
+struct subuff *alloc_tcp_sub(const struct sock_info *current_si) {
+    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
+    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
+    if (!sub) {
+        printf("Error: allocation of the arp sub in request failed \n");
+        return NULL;
+    }
+    sub->protocol = IPP_TCP;
+    struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, TCP_LEN);
+    // prepare TCP struct with related fields in correct network byte order  and checksum
+    update_tcp(current_si, syntcp);
+    return sub;
 }
 
 /**
@@ -85,7 +112,6 @@ int socket(int domain, int type, int protocol) {
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     printf("CONNECT CALLED:\n");
-
     if (!check_sockfd(sockfd)) {
         // the default path
         return _connect(sockfd, addr, addrlen);
@@ -96,13 +122,27 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     assign_sockets(current_si, addr, addrlen);
     current_si->state = SOCK_CONNECTING;
 
-    // TODO MATTHIAS
-    // do 3way handshake
-    // prepare TCP struct with related fields in correct network byte order  and checksum
-    // add proper IP and Ethernet headers
-    // add to sub
-    // send to tcp_tx (or just tod ip_output directly, up to you)
+    // give some time to devs to open wireshark/tcpdump
+    sleep(5);
 
+    // try first one
+    struct subuff *sub = alloc_tcp_sub(current_si);
+    int ret = ip_output(current_si->rip, sub);
+    printf("ret is %i\n", ret);
+
+    // if our cache is empty and arp in progress
+    if (ret == -11) {
+        sleep(1);
+
+        struct subuff *sub2 = alloc_tcp_sub(current_si);
+        int ret2 = ip_output(current_si->rip, sub2);
+        printf("ret2 is %i\n", ret2);
+    }
+
+    sleep(3);
+    // todo the rest of the handshake (server will send to tcp_rx, so make this thread wait)
+
+    //free_sub(sub);
     return -ENOSYS;
 }
 

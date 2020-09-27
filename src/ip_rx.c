@@ -35,6 +35,12 @@ int ip_rx(struct subuff *sub) {
     ih->len =   ntohs(ih->len);
     ih->id =    ntohs(ih->id);
 
+    // todo delete later because i receive these dns bullshit
+    if (ih->proto == 17 || ih->proto == 2) {
+        printf("nope (%i)", ih->proto);
+        return 0;
+    }
+
     debug_ip_hdr("in", ih);
 
     switch (ih->proto) {

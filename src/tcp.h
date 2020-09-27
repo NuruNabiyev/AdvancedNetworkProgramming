@@ -6,22 +6,15 @@
 #include "systems_headers.h"
 #include "subuff.h"
 
+#define TCP_LEN 40
+
 struct tcp_hdr {
     uint16_t src_port;
     uint16_t dest_port;
     uint32_t seq_num;
     uint32_t ack_num;
-    //uint8_t data_offset: 4;    // also indicated header length by *4
-    //uint16_t res: 12;
-    uint8_t reserved: 4,
-            data_offset: 4;
-    uint8_t fin: 1,
-            syn: 1,
-            rst: 1,
-            push: 1,
-            ack: 1,
-            urg: 1,
-            extra: 2;
+    uint8_t reserved: 4, data_offset: 4;
+    uint8_t fin: 1, syn: 1, rst: 1, push: 1, ack: 1, urg: 1, extra: 2;
     uint16_t window;
     uint16_t csum;
     uint16_t up;

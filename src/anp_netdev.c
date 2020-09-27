@@ -70,6 +70,7 @@ int netdev_transmit(struct subuff *sub, uint8_t *dst_hw, uint16_t ethertype) {
     memcpy(hdr->smac, dev->hwaddr, dev->addr_len);
     hdr->ethertype = htons(ethertype);
     ret = tdev_write((char *)sub->data, sub->len);
+    printf("netdev transmit is %i\n\n", ret);
     return ret;
 }
 

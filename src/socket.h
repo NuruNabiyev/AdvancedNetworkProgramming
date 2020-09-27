@@ -76,7 +76,7 @@ static inline int get_random_number() {
     return num;
 }
 
-static inline void debug_ip(uint32_t ip) {
+static inline void debug_ip_address(uint32_t ip) {
     printf("ip: %hhu.%hhu.%hhu.%hhu\n", ip >> 24, ip >> 16, ip >> 8, ip >> 0);
 }
 
