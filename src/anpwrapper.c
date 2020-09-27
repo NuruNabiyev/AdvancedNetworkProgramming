@@ -75,10 +75,7 @@ void update_tcp(const struct sock_info *si, struct tcp_hdr *tcpHdr) {
     tcpHdr->syn = 1;
     tcpHdr->window = ntohs(65495);
 
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, ntohs(si->lip), ntohs(si->rip));
-    tcpHdr->csum = ntohs(csum);
-    printf("real tcp: ");
-    dump_hex(tcpHdr, 40);
+    tcpHdr->csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, htonl(si->lip), htonl(si->rip));
 }
 
 struct subuff *alloc_tcp_sub(const struct sock_info *current_si) {
@@ -92,16 +89,6 @@ struct subuff *alloc_tcp_sub(const struct sock_info *current_si) {
     struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, TCP_LEN);
     // prepare TCP struct with related fields in correct network byte order  and checksum
     update_tcp(current_si, syntcp);
-
-    // debug to see tcp and sub dumps
-    struct iphdr *ih = IP_HDR_FROM_SUB(sub);
-    struct tcp_hdr *tcp = (struct tcp_hdr *) (ih->data);
-    printf("dump tcp: ");
-    dump_hex(tcp, 40);
-    debug_tcp(tcp);
-    printf("dump sub: ");
-    dump_hex(sub, 170);
-
     return sub;
 }
 
@@ -145,7 +132,7 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 
     // if our cache is empty and arp in progress
     if (ret == -11) {
-        sleep(3);
+        sleep(1);
 
         struct subuff *sub2 = alloc_tcp_sub(current_si);
         int ret2 = ip_output(current_si->rip, sub2);
