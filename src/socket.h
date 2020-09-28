@@ -23,7 +23,8 @@ struct sock_info {
     // should be unique for this program
     int fd;
     uint8_t state;  // Closed (0) Connecting(1) Listening(2) Established(3)
-    uint32_t seq; // our last syn that hasn't been ACKed yet
+    uint32_t seq; // our last syn that hasn't been ACKed yet //todo change to iss
+    uint32_t serv_seq; // server's seq that needs to be ACKed by us
     // local ip and port
     uint32_t lip;
     uint16_t lport;

@@ -67,7 +67,7 @@ void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, s
     current_si->lport = rport; // can be what ever we want
 }
 
-void update_tcp(struct sock_info *si, struct tcp_hdr *tcpHdr) {
+void update_tcp_syn(struct sock_info *si, struct tcp_hdr *tcpHdr) {
     tcpHdr->src_port = ntohs(si->lport);
     tcpHdr->dest_port = ntohs(si->rport);
     tcpHdr->seq_num = htonl(92957434); //todo generate yourself and save SYN in sockinfo
@@ -79,11 +79,24 @@ void update_tcp(struct sock_info *si, struct tcp_hdr *tcpHdr) {
 
     uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, htonl(si->lip), htonl(si->rip));
     tcpHdr->csum = csum;
-    printf("real tcp: ");
-    dump_hex(tcpHdr, 40);
 }
 
-struct subuff *alloc_tcp_sub(const struct sock_info *current_si) {
+void update_tcp_ack(struct sock_info *si, struct tcp_hdr *tcpHdr) {
+    tcpHdr->src_port = ntohs(si->lport);
+    tcpHdr->dest_port = ntohs(si->rport);
+    tcpHdr->seq_num = htonl(ntohl(si->seq) + 1);
+    tcpHdr->ack_num = htonl(ntohl(si->serv_seq) + 1);
+
+    tcpHdr->data_offset = 10;
+    tcpHdr->ack = 1;
+    tcpHdr->window = ntohs(512);
+    tcpHdr->csum = 0;
+
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, htonl(si->lip), htonl(si->rip));
+    tcpHdr->csum = csum;
+}
+
+struct subuff *alloc_tcp_sub(const struct sock_info *current_si, bool syn_or_ack) {
     struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
     sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
     if (!sub) {
@@ -92,17 +105,14 @@ struct subuff *alloc_tcp_sub(const struct sock_info *current_si) {
     }
     sub->protocol = IPP_TCP;
     struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, TCP_LEN);
-    // prepare TCP struct with related fields in correct network byte order  and checksum
-    update_tcp(current_si, syntcp);
 
-    // debug to see tcp and sub dumps
-    struct iphdr *ih = IP_HDR_FROM_SUB(sub);
-    struct tcp_hdr *tcp = (struct tcp_hdr *) (ih->data);
-    printf("dump tcp: ");
-    dump_hex(tcp, 40);
-    debug_tcp(tcp);
-    printf("dump sub: ");
-    dump_hex(sub, 170);
+    // create tcp packet based on the syn or ack
+    if (syn_or_ack) {
+        // prepare TCP struct with related fields in correct network byte order  and checksum
+        update_tcp_syn(current_si, syntcp);
+    } else {
+        update_tcp_ack(current_si, syntcp);
+    }
 
     return sub;
 }
@@ -138,22 +148,29 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     current_si->state = SOCK_CONNECTING;
 
     // give some time to devs to open wireshark/tcpdump
-    sleep(1);
+    //sleep(1);
 
     // try first one
-    struct subuff *sub = alloc_tcp_sub(current_si);
+    struct subuff *sub = alloc_tcp_sub(current_si, true);
     int ret = ip_output(current_si->rip, sub);
 
     // if our cache is empty and arp in progress
     if (ret == -11) {
         sleep(1);
 
-        struct subuff *sub2 = alloc_tcp_sub(current_si);
-        int ret2 = ip_output(current_si->rip, sub2);
-        printf("ret2 is %i\n", ret2);
+        struct subuff *sub2 = alloc_tcp_sub(current_si, true);
+        ret = ip_output(current_si->rip, sub2);
+        printf("ret2 is %i\n", ret);
 
         while (!server_synack_ok) {}
         printf("\n\nAWAKE - PROCEED TO SEND ACK \n\n");
+
+        struct subuff *sub_ack = alloc_tcp_sub(current_si, false);
+        ret = ip_output(current_si->rip, sub_ack);
+        if (ret != -1) {
+            current_si->state = SOCK_ESTABLISHED;
+            return 0;
+        }
     }
 
     // todo is something goes wrong, free sub and re-transmit 5 times?

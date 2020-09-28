@@ -32,10 +32,9 @@ void tcp_rx(struct subuff *sub) {
             printf("\n---NO SUCH ITEM FOUND---\n");
             goto dropkt;
         }
-        printf("--------- CHECKSUM=%hx! --------\n", htons(check_csum));
+        si->serv_seq = tcp->seq_num;
+        // release the lock
         server_synack_ok = true;
-
-        //... send the final ACK here
     }
 
     dropkt:
