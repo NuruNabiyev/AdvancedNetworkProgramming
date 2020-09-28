@@ -105,7 +105,7 @@ struct subuff *alloc_tcp_sub(const struct sock_info *current_si, bool syn_or_ack
     }
     sub->protocol = IPP_TCP;
     struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, TCP_LEN);
-
+  
     // create tcp packet based on the syn or ack
     if (syn_or_ack) {
         // prepare TCP struct with related fields in correct network byte order  and checksum
