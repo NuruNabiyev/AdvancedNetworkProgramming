@@ -99,3 +99,15 @@ void dump_hex(void *buff, int len){
     }
     printf("]\n");
 }
+
+int get_random_number() {
+    srand(time(0)); // seed random number.
+    int upper = 2000000;
+    int lower = 1000000;
+    int num = (rand() % (upper - lower + 1)) + lower;
+    return num;
+}
+
+void debug_ip_address(uint32_t ip) {
+    printf("ip: %hhu.%hhu.%hhu.%hhu\n", ip >> 24, ip >> 16, ip >> 8, ip >> 0);
+}

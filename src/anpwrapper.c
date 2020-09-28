@@ -5,7 +5,6 @@
 #include "systems_headers.h"
 #include "linklist.h"
 #include "anpwrapper.h"
-#include "socket.h"
 #include "tcp.h"
 #include "utilities.h"
 #include "subuff.h"
@@ -45,8 +44,8 @@ static int is_socket_supported(int domain, int type, int protocol) {
 /*
  * Parses local and remote ip and ports, assigns to current socket_info
  */
-void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, socklen_t addrlen) {
-    // retrieve port and ip and prepare current sock_info
+void assign_sockets(struct tcblock *tcb, const struct sockaddr *addr, socklen_t addrlen) {
+    // retrieve port and ip and prepare current tcblock
     char rips[NI_MAXHOST], rports[NI_MAXSERV];
     int rc = getnameinfo(addr, addrlen, rips, sizeof(rips), rports, sizeof(rports),
                          NI_NUMERICHOST | NI_NUMERICSERV);
@@ -55,48 +54,48 @@ void assign_sockets(struct sock_info *current_si, const struct sockaddr *addr, s
     inet_pton(AF_INET, rips, &(sa.sin_addr));
     uint32_t rip = htonl(sa.sin_addr.s_addr);
     uint16_t rport = atoi(rports);
-    current_si->rip = rip;
-    current_si->rport = rport;
+    tcb->rip = rip;
+    tcb->rport = rport;
 
     // assign local ip and port
     char lips[NI_MAXHOST] = "10.0.0.4";
     struct sockaddr_in sa_loc;
     inet_pton(AF_INET, lips, &(sa_loc.sin_addr));
     uint32_t lip = htonl(sa_loc.sin_addr.s_addr);
-    current_si->lip = lip;
-    current_si->lport = rport; // can be what ever we want
+    tcb->lip = lip;
+    tcb->lport = rport; // can be what ever we want
 }
 
-void update_tcp_syn(struct sock_info *si, struct tcp_hdr *tcpHdr) {
-    tcpHdr->src_port = ntohs(si->lport);
-    tcpHdr->dest_port = ntohs(si->rport);
-    tcpHdr->seq_num = htonl(92957434); //todo generate yourself and save SYN in sockinfo
-    si->seq = tcpHdr->seq_num;
+void update_tcp_syn(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
+    tcpHdr->src_port = ntohs(tcb->lport);
+    tcpHdr->dest_port = ntohs(tcb->rport);
+    tcpHdr->seq_num = htonl(get_random_number());
+    tcb->iss = tcpHdr->seq_num;
     tcpHdr->data_offset = 10;
     tcpHdr->syn = 1;
     tcpHdr->window = ntohs(65495);
     tcpHdr->csum = 0;
 
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, htonl(si->lip), htonl(si->rip));
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
     tcpHdr->csum = csum;
 }
 
-void update_tcp_ack(struct sock_info *si, struct tcp_hdr *tcpHdr) {
-    tcpHdr->src_port = ntohs(si->lport);
-    tcpHdr->dest_port = ntohs(si->rport);
-    tcpHdr->seq_num = htonl(ntohl(si->seq) + 1);
-    tcpHdr->ack_num = htonl(ntohl(si->serv_seq) + 1);
+void update_tcp_ack(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
+    tcpHdr->src_port = ntohs(tcb->lport);
+    tcpHdr->dest_port = ntohs(tcb->rport);
+    tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
+    tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
 
     tcpHdr->data_offset = 10;
     tcpHdr->ack = 1;
     tcpHdr->window = ntohs(512);
     tcpHdr->csum = 0;
 
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, 40, IPP_TCP, htonl(si->lip), htonl(si->rip));
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
     tcpHdr->csum = csum;
 }
 
-struct subuff *alloc_tcp_sub(const struct sock_info *current_si, bool syn_or_ack) {
+struct subuff *alloc_tcp_sub(struct tcblock *tcb, bool syn_or_ack) {
     struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
     sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
     if (!sub) {
@@ -109,9 +108,9 @@ struct subuff *alloc_tcp_sub(const struct sock_info *current_si, bool syn_or_ack
     // create tcp packet based on the syn or ack
     if (syn_or_ack) {
         // prepare TCP struct with related fields in correct network byte order  and checksum
-        update_tcp_syn(current_si, syntcp);
+        update_tcp_syn(tcb, syntcp);
     } else {
-        update_tcp_ack(current_si, syntcp);
+        update_tcp_ack(tcb, syntcp);
     }
 
     return sub;
@@ -130,9 +129,9 @@ int socket(int domain, int type, int protocol) {
         return _socket(domain, type, protocol);
     }
 
-    struct sock_info *si = init_sock(); // save this sock_info in fd_cache
-    add_sockfd_to_cache(si);
-    return si->fd;
+    struct tcblock *tcb = init_tcb(); // save this tcblock in fd_cache
+    add_sockfd_to_cache(tcb);
+    return tcb->fd;
 }
 
 int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
@@ -143,32 +142,32 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     }
 
     // get our socket, populate with local ip/port and remote ip/port, set state CONNECTING
-    struct sock_info *current_si = get_sock_info(sockfd);
-    assign_sockets(current_si, addr, addrlen);
-    current_si->state = SOCK_CONNECTING;
+    struct tcblock *tcb = get_tcb_by_fd(sockfd);
+    assign_sockets(tcb, addr, addrlen);
+    tcb->state = SOCK_CONNECTING;
 
     // give some time to devs to open wireshark/tcpdump
     //sleep(1);
 
     // try first one
-    struct subuff *sub = alloc_tcp_sub(current_si, true);
-    int ret = ip_output(current_si->rip, sub);
+    struct subuff *sub = alloc_tcp_sub(tcb, true);
+    int ret = ip_output(tcb->rip, sub);
 
     // if our cache is empty and arp in progress
     if (ret == -11) {
         sleep(1);
 
-        struct subuff *sub2 = alloc_tcp_sub(current_si, true);
-        ret = ip_output(current_si->rip, sub2);
+        struct subuff *sub2 = alloc_tcp_sub(tcb, true);
+        ret = ip_output(tcb->rip, sub2);
         printf("ret2 is %i\n", ret);
 
         while (!server_synack_ok) {}
         printf("\n\nAWAKE - PROCEED TO SEND ACK \n\n");
 
-        struct subuff *sub_ack = alloc_tcp_sub(current_si, false);
-        ret = ip_output(current_si->rip, sub_ack);
+        struct subuff *sub_ack = alloc_tcp_sub(tcb, false);
+        ret = ip_output(tcb->rip, sub_ack);
         if (ret != -1) {
-            current_si->state = SOCK_ESTABLISHED;
+            tcb->state = SOCK_ESTABLISHED;
             return 0;
         }
     }

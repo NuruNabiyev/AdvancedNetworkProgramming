@@ -35,7 +35,7 @@ int ip_rx(struct subuff *sub) {
     ih->len =   ntohs(ih->len);
     ih->id =    ntohs(ih->id);
 
-    // todo delete later because i receive these dns bullshit
+    // todo delete later because i receive these dns
     if (ih->proto == 17 || ih->proto == 2) {
         printf("nope (%i)", ih->proto);
         return 0;

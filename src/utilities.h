@@ -17,6 +17,8 @@ void     print_trace(void);
 int      do_tcp_csum(uint8_t *data, int length, uint16_t protocol, uint32_t saddr, uint32_t daddr);
 // dumps whole buffer as hex
 void     dump_hex(void *buff, int len);
+int      get_random_number();
+void     debug_ip_address(uint32_t ip);
 
 #define ANP_MIN(a, b) (a < b ? a : b)
 
