@@ -54,6 +54,18 @@ struct sock_info *get_sock_info(int fd) {
     return NULL;
 }
 
+struct sock_info *get_sock_info_by_seq(uint32_t seq) {
+    struct list_head *item;
+    struct sock_info *entry;
+    list_for_each(item, &fd_cache) {
+        entry = list_entry(item, struct sock_info, list);
+        if (seq == ntohl(entry->seq)) {
+            return entry;
+        }
+    }
+    return NULL;
+}
+
 // Helper function in case we need it later.
 void free_fc_cache() {
     struct list_head *item, *tmp;
