@@ -12,6 +12,7 @@
 #include "route.h"
 #include "anp_netdev.h"
 #include "ip.h"
+#include <time.h>
 
 static int (*__start_main)(int (*main)(int, char **, char **), int argc, \
         char **ubp_av, void (*init)(void), void (*fini)(void), \
@@ -104,7 +105,7 @@ struct subuff *alloc_tcp_sub(struct tcblock *tcb, bool syn_or_ack) {
     }
     sub->protocol = IPP_TCP;
     struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, TCP_LEN);
-  
+
     // create tcp packet based on the syn or ack
     if (syn_or_ack) {
         // prepare TCP struct with related fields in correct network byte order  and checksum
@@ -114,6 +115,32 @@ struct subuff *alloc_tcp_sub(struct tcblock *tcb, bool syn_or_ack) {
     }
 
     return sub;
+}
+
+int send_first_seq(struct tcblock *tcb) {
+    struct subuff *sub = alloc_tcp_sub(tcb, true);
+    return ip_output(tcb->rip, sub);
+}
+
+int wait_for_server(int max_seconds) {
+    // if we are here, then our seq was success, and now waiting for server
+    time_t lock_start, curr_time;
+    time(&lock_start);
+    bool timeout = false;
+    while (!server_synack_ok) {
+        time(&curr_time);
+        if (curr_time - lock_start == max_seconds) {
+            timeout = true;
+            break;
+        }
+    }
+
+    if (timeout) {
+        printf("\nSERVER DID NOT REPLY - ABORT \n");
+        return -1;
+    } else {
+        return 1;
+    }
 }
 
 /**
@@ -146,24 +173,33 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     assign_sockets(tcb, addr, addrlen);
     tcb->state = SOCK_CONNECTING;
 
-    // give some time to devs to open wireshark/tcpdump
-    //sleep(1);
-
     // try first one
-    struct subuff *sub = alloc_tcp_sub(tcb, true);
-    int ret = ip_output(tcb->rip, sub);
+    int ret = send_first_seq(tcb);
 
     // if our cache is empty and arp in progress
     if (ret == -11) {
         sleep(1);
+        // send second time (or more)
+        int count = 0;
+        do {
+            printf("\nSENDING INITIAl SYN (%i)\n", count);
+            if (send_first_seq(tcb) < 0) sleep(1); else break;
+            count++;
+        } while (count < 3);
 
-        struct subuff *sub2 = alloc_tcp_sub(tcb, true);
-        ret = ip_output(tcb->rip, sub2);
-        printf("ret2 is %i\n", ret);
+        if (count == 2) {
+            tcb->state = SOCK_CLOSED;
+            return -1; // todo change to correct error
+        }
 
-        while (!server_synack_ok) {}
-        printf("\n\nAWAKE - PROCEED TO SEND ACK \n\n");
+        // lock until server responds with syn-ack
+        ret = wait_for_server(3);
+        if (ret < 1) {
+            tcb->state = SOCK_CLOSED;
+            return ret; // todo change to correct error
+        }
 
+        // send ack
         struct subuff *sub_ack = alloc_tcp_sub(tcb, false);
         ret = ip_output(tcb->rip, sub_ack);
         if (ret != -1) {
@@ -172,8 +208,6 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
         }
     }
 
-    // todo is something goes wrong, free sub and re-transmit 5 times?
-    //free_sub(sub);
     return -ENOSYS;
 }
 
