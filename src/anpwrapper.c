@@ -70,7 +70,7 @@ void assign_sockets(struct tcblock *tcb, const struct sockaddr *addr, socklen_t 
 void update_tcp_syn(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
     tcpHdr->src_port = ntohs(tcb->lport);
     tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = htonl(get_random_number());
+    tcpHdr->seq_num = htonl(get_random_number()); // todo save on repeat
     tcb->iss = tcpHdr->seq_num;
     tcpHdr->data_offset = 10;
     tcpHdr->syn = 1;
@@ -175,39 +175,46 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 
     // try first one
     int ret = send_first_seq(tcb);
+    int count = 1;
 
     // if our cache is empty and arp in progress
     if (ret == -11) {
         sleep(1);
-        // send second time (or more)
-        int count = 0;
-        do {
-            printf("\nSENDING INITIAl SYN (%i)\n", count);
-            if (send_first_seq(tcb) < 0) sleep(1); else break;
-            count++;
-        } while (count < 3);
-
-        if (count == 2) {
-            tcb->state = SOCK_CLOSED;
-            return -ETIMEDOUT; // todo change to correct error
-        }
-
-        // lock until server responds with syn-ack
-        ret = wait_for_server(3);
-        if (ret < 1) {
-            tcb->state = SOCK_CLOSED;
-            return -ETIMEDOUT; // todo change to correct error
-        }
-
-        // send ack
-        struct subuff *sub_ack = alloc_tcp_sub(tcb, false);
-        ret = ip_output(tcb->rip, sub_ack);
-        if (ret != -1) {
-            tcb->state = SOCK_ESTABLISHED;
-            return 0;
-        }
     }
 
+    if (ret < 0) {
+        // send second time (or more)
+        do {
+            printf("\nRESENDING INITIAL SYN (%i)\n", count);
+            if (send_first_seq(tcb) < 0) sleep(1); else break;
+            count++;
+        } while (count <= 3);
+    }
+
+    if (count == 2) {
+        tcb->state = SOCK_CLOSED;
+        errno = ETIMEDOUT;
+        return -ETIMEDOUT;
+    }
+
+    // lock until server responds with syn-ack
+    ret = wait_for_server(3);
+    if (ret < 1) {
+        tcb->state = SOCK_CLOSED;
+        errno = ETIMEDOUT;
+        return -ETIMEDOUT;
+    }
+
+    // send ack
+    struct subuff *sub_ack = alloc_tcp_sub(tcb, false);
+    ret = ip_output(tcb->rip, sub_ack);
+    if (ret != -1) {
+        tcb->state = SOCK_ESTABLISHED;
+        errno = 0;
+        return 0;
+    }
+
+    errno = ENOSYS;
     return -ENOSYS;
 }
 

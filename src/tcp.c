@@ -85,9 +85,6 @@ void tcp_rx(struct subuff *sub) {
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
     struct tcp_hdr *tcp = (struct tcp_hdr *) (ih->data);
 
-    dump_hex(tcp, TCP_LEN);
-    debug_tcp(tcp);
-
     if (tcp->ack == 1 && tcp->syn == 1) {
         // check the checksum
         uint16_t packet_csum = tcp->csum;
