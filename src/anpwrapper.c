@@ -189,14 +189,14 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 
         if (count == 2) {
             tcb->state = SOCK_CLOSED;
-            return -1; // todo change to correct error
+            return -ETIMEDOUT; // todo change to correct error
         }
 
         // lock until server responds with syn-ack
         ret = wait_for_server(3);
         if (ret < 1) {
             tcb->state = SOCK_CLOSED;
-            return ret; // todo change to correct error
+            return -ETIMEDOUT; // todo change to correct error
         }
 
         // send ack
