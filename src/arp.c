@@ -9,12 +9,11 @@
 
 /// ARP is defined in : https://tools.ietf.org/html/rfc826
 
-static uint8_t broadcast_hw[] = { 0xff, 0xff, 0xff, 0xff, 0xff, 0xff };
+static uint8_t broadcast_hw[] = {0xff, 0xff, 0xff, 0xff, 0xff, 0xff};
 static LIST_HEAD(arp_cache);
 
 // allocate an ARP packet
-static struct subuff *alloc_arp_sub()
-{
+static struct subuff *alloc_arp_sub() {
     struct subuff *sub = alloc_sub(ETH_HDR_LEN + ARP_HDR_LEN + ARP_DATA_LEN);
     sub_reserve(sub, ETH_HDR_LEN + ARP_HDR_LEN + ARP_DATA_LEN);
     sub->protocol = htons(ETH_P_ARP);
@@ -56,9 +55,9 @@ void arp_rx(struct subuff *skb) {
 
     arphdr = arp_hdr(skb);
     // get the host ordering -- network operations are done in the network byte order
-    arphdr->hwtype  = ntohs(arphdr->hwtype);
+    arphdr->hwtype = ntohs(arphdr->hwtype);
     arphdr->protype = ntohs(arphdr->protype);
-    arphdr->opcode  = ntohs(arphdr->opcode);
+    arphdr->opcode = ntohs(arphdr->opcode);
     debug_arp("in", arphdr);
 
     if (arphdr->hwtype != ARP_ETHERNET) {
@@ -97,13 +96,13 @@ void arp_rx(struct subuff *skb) {
             goto drop_pkt;
     }
 
-drop_pkt:
+    drop_pkt:
     free_sub(skb);
 }
 
 int arp_request(uint32_t src_ip, uint32_t dst_ip, struct anp_netdev *netdev) {
-    struct subuff   *sub;
-    struct arp_hdr  *arp;
+    struct subuff *sub;
+    struct arp_hdr *arp;
     struct arp_ipv4 *payload;
     int rc = 0;
 
@@ -129,10 +128,10 @@ int arp_request(uint32_t src_ip, uint32_t dst_ip, struct anp_netdev *netdev) {
     arp = (struct arp_hdr *) sub_push(sub, ARP_HDR_LEN);
 
     debug_arp("req", arp);
-    arp->opcode  = htons(ARP_REQUEST);
-    arp->hwtype  = htons(ARP_ETHERNET);
+    arp->opcode = htons(ARP_REQUEST);
+    arp->hwtype = htons(ARP_ETHERNET);
     arp->protype = htons(ETH_P_IP);
-    arp->hwsize  = netdev->addr_len;
+    arp->hwsize = netdev->addr_len;
     arp->prosize = 4;
 
     debug_arp_payload("req", payload);
@@ -167,8 +166,8 @@ void arp_reply(struct subuff *sub, struct anp_netdev *netdev) {
     arphdr->opcode = ARP_REPLY;
 
     debug_arp("reply", arphdr);
-    arphdr->opcode  = htons(arphdr->opcode);
-    arphdr->hwtype  = htons(arphdr->hwtype);
+    arphdr->opcode = htons(arphdr->opcode);
+    arphdr->hwtype = htons(arphdr->hwtype);
     arphdr->protype = htons(arphdr->protype);
 
     debug_arp_payload("reply", arpdata);
@@ -184,13 +183,13 @@ void arp_reply(struct subuff *sub, struct anp_netdev *netdev) {
  * Returns the HW address of the given source IP address
  * NULL if not found
  */
-unsigned char* arp_get_hwaddr(uint32_t lookup_ip) {
+unsigned char *arp_get_hwaddr(uint32_t lookup_ip) {
     struct list_head *item;
     struct arp_cache_entry *entry;
     list_for_each(item, &arp_cache) {
         entry = list_entry(item, struct arp_cache_entry, list);
         if (entry->state == ARP_RESOLVED &&
-                entry->arpIpv4.src_ip == lookup_ip) {
+            entry->arpIpv4.src_ip == lookup_ip) {
             uint8_t *copy = (uint8_t *) &entry->arpIpv4.src_mac;
             return copy;
         }
