@@ -123,24 +123,14 @@ int send_first_seq(struct tcblock *tcb) {
 }
 
 int wait_for_server(int max_seconds) {
-    // if we are here, then our seq was success, and now waiting for server
-    time_t lock_start, curr_time;
-    time(&lock_start);
-    bool timeout = false;
-    while (!server_synack_ok) {
-        time(&curr_time);
-        if (curr_time - lock_start == max_seconds) {
-            timeout = true;
-            break;
-        }
-    }
-
-    if (timeout) {
-        printf("\nSERVER DID NOT REPLY - ABORT \n");
-        return -1;
-    } else {
-        return 1;
-    }
+   pthread_mutex_lock(&tcp_connect_lock);
+   while(waiting == 0)
+       pthread_cond_wait(&server_synack_ok, &tcp_connect_lock);
+   pthread_mutex_unlock(&tcp_connect_lock);
+ 
+   waiting = 0;// reset the waiting bool.
+ 
+   return 1;
 }
 
 /**

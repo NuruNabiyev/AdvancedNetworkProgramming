@@ -7,7 +7,10 @@
 
 // todo this is going to be initialized to false again once another tcp comes in
 //  so we should use proper pthread locks
-volatile bool server_synack_ok = false;
+//volatile bool server_synack_ok = false;
+volatile int waiting = 0;
+pthread_cond_t server_synack_ok = PTHREAD_COND_INITIALIZER;
+pthread_mutex_t tcp_connect_lock = PTHREAD_MUTEX_INITIALIZER;
 
 static LIST_HEAD(fd_cache);
 
@@ -100,7 +103,13 @@ void tcp_rx(struct subuff *sub) {
         }
         si->serv_seq = tcp->seq_num;
         // release the lock
-        server_synack_ok = true;
+        pthread_mutex_lock(&tcp_connect_lock);
+        //server_synack_ok = true;
+        waiting = 1;
+        printf("---------------------------SENING SIGNAL..\n\n");
+        pthread_cond_signal(&server_synack_ok);
+        pthread_mutex_unlock(&tcp_connect_lock);
+    
     }
 
     dropkt:

@@ -14,7 +14,10 @@
 #define SOCK_CONNECTING 1
 #define SOCK_ESTABLISHED 2
 
-extern volatile bool server_synack_ok;
+extern volatile int waiting;
+
+extern pthread_cond_t server_synack_ok;
+extern pthread_mutex_t tcp_connect_lock;
 
 struct tcp_hdr {
     uint16_t src_port;
