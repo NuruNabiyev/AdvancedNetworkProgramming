@@ -223,16 +223,45 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     return -ENOSYS;
 }
 
-// TODO: ANP milestone 5 -- implement the send, recv, and close calls
 ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
-    //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
-    bool is_anp_sockfd = false;
-    if (is_anp_sockfd) {
-        //TODO: implement your logic here
-        return -ENOSYS;
+    printf("SEND CALLED:\n");
+    if (!check_sockfd(sockfd)) {
+        // the default path
+        return _send(sockfd, buf, len, flags);
     }
-    // the default path
-    return _send(sockfd, buf, len, flags);
+
+    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN + len);
+    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN + len);
+    if (!sub) {
+        printf("Error: allocation of the arp sub in request failed \n");
+        return NULL;
+    }
+    sub->protocol = IPP_TCP;
+    struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN);
+    struct tcblock *tcb = get_tcb_by_fd(sockfd);
+
+    tcpHdr->src_port = ntohs(tcb->lport);
+    tcpHdr->dest_port = ntohs(tcb->rport);
+    tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
+    tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
+    tcpHdr->data_offset = 10;
+    tcpHdr->ack = 1;
+    tcpHdr->push = 1;
+    tcpHdr->window = ntohs(512);
+    tcpHdr->csum = 0;
+    uint8_t *subdata = sub_push(sub, len);
+    memcpy(subdata, buf, len);
+
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
+    tcpHdr->csum = csum;
+
+    printf("\n\nABOUT TO SEND \n\n");
+    dump_hex(sub, 200);
+    int ret = ip_output(tcb->rip, sub);
+    sleep(3);
+
+    // todo if server does not acknowledge this in 1-2 seconds, repeat
+    return -ENOSYS;
 }
 
 ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
