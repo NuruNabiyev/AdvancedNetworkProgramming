@@ -123,14 +123,29 @@ int send_first_seq(struct tcblock *tcb) {
 }
 
 int wait_for_server(int max_seconds) {
-   pthread_mutex_lock(&tcp_connect_lock);
-   while(waiting == 0)
-       pthread_cond_wait(&server_synack_ok, &tcp_connect_lock);
-   pthread_mutex_unlock(&tcp_connect_lock);
- 
-   waiting = 0;// reset the waiting bool.
- 
-   return 1;
+    int             rc;
+    struct timespec ts;
+    struct timeval  tp;
+
+    rc = pthread_mutex_lock(&tcp_connect_lock);
+    gettimeofday(&tp, NULL);
+    
+    ts.tv_sec = tp.tv_sec;
+    ts.tv_nsec = tp.tv_usec * 1000;
+    ts.tv_sec += max_seconds;
+
+    while(waiting == 0){
+        rc = pthread_cond_timedwait(&server_synack_ok, &tcp_connect_lock, &ts);
+        if(rc == ETIMEDOUT){
+            printf("\nTIMED OUT - ABORT\n");
+            rc = pthread_mutex_unlock(&tcp_connect_lock);
+            return -1; 
+        }
+    }
+    
+    // We have been signae=led, the waiting is over!
+    waiting = 0; // Reset thread waiting predicate for next use.
+    return 1;
 }
 
 /**
