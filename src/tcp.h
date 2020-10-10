@@ -7,14 +7,18 @@
 #include "subuff.h"
 #include "linklist.h"
 
-#define TCP_LEN 40
+#define TCP_LEN_40 40
+#define TCP_LEN_32 32
 
 // todo add other states, rfc page 21, also look at diagram at page 23
 #define SOCK_CLOSED 0
 #define SOCK_CONNECTING 1
 #define SOCK_ESTABLISHED 2
 
-extern volatile bool server_synack_ok;
+extern volatile int waiting;
+
+extern pthread_cond_t server_synack_ok;
+extern pthread_mutex_t tcp_connect_lock;
 
 struct tcp_hdr {
     uint16_t src_port;
@@ -41,6 +45,13 @@ struct tcblock {
     uint8_t state;
     uint32_t iss;       // initial send sequence number
     uint32_t serv_seq;  // server's seq that needs to be ACKed by us todo delete?
+
+    // PAGE 40. If the data flow is momentarily idle and all data
+    // sent has been acknowledged then the three variables will be equal
+    uint32_t snd_nxt;   // next sequence number to use
+    uint32_t rcv_nxt;   // next sequence number to expect
+    uint32_t snd_una;   // oldest unacknowledged sequence number
+
     // local ip and port
     uint32_t lip;
     uint16_t lport;
@@ -76,6 +87,14 @@ void free_fc_cache();
 struct tcblock *get_tcb_by_fd(int fd);
 
 struct tcblock *get_tcb_by_iss(uint32_t seq);
+
+struct subuff *alloc_tcp_connect(struct tcblock *tcb, bool syn_or_ack);
+
+void update_tcp_syn(struct tcblock *tcb, struct tcp_hdr *tcpHdr);
+
+void update_tcp_ack(struct tcblock *tcb, struct tcp_hdr *tcpHdr);
+
+struct subuff *allocate_tcp_send(struct tcblock *tcb, const void *buf, size_t len);
 
 /**
  * Receives incoming tcp packet from IP layer
