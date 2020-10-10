@@ -18,14 +18,13 @@
         printf("IP (HDR %lu) "msg" (ihl: %hhu version: %hhu tos: %hhu "                    \
                 "len %hu id: %hu frag_offset: %hu ttl: %hhu "                          \
                 "proto: %hhu csum: %hx "                                               \
-                "saddr: %hhu.%hhu.%hhu.%hhu daddr: %hhu.%hhu.%hhu.%hhu);;; IPsrc %u\n",            \
+                "saddr: %hhu.%hhu.%hhu.%hhu daddr: %hhu.%hhu.%hhu.%hhu);\n",            \
                 IP_HDR_LEN,                                                            \
                 hdr->ihl,                                                              \
                 hdr->version, hdr->tos, hdr->len, hdr->id,                             \
                 hdr->frag_offset, hdr->ttl, hdr->proto, hdr->csum,                     \
                 hdr->saddr >> 24, hdr->saddr >> 16, hdr->saddr >> 8, hdr->saddr >> 0,  \
-                hdr->daddr >> 24, hdr->daddr >> 16, hdr->daddr >> 8, hdr->daddr >> 0,      \
-                hdr->saddr); \
+                hdr->daddr >> 24, hdr->daddr >> 16, hdr->daddr >> 8, hdr->daddr >> 0); \
     } while (0)
 
 #define debug_ip(msg, args...) do {                                    \

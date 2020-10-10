@@ -187,20 +187,34 @@ void tcp_rx(struct subuff *sub) {
         si->serv_seq = tcp->seq_num;
         // release the lock
         pthread_mutex_lock(&tcp_connect_lock);
-        //server_synack_ok = true;
         waiting = 1;
         printf("---------------------------SENING SIGNAL..\n\n");
         pthread_cond_signal(&server_synack_ok);
         pthread_mutex_unlock(&tcp_connect_lock);
+        return;
     }
 
-    if (tcp->ack == 1) {
-        printf("\n\nRECEIVED ACK FOR OUT PACKET???\n\n");
+    if (tcp->ack == 1 && tcp->push == 0) {
+        printf("\n\nRECEIVED ACK FOR PACKET\n");
+        debug_tcp(tcp);
+
+        // check the checksum
+        uint16_t packet_csum = tcp->csum;
+        tcp->csum = 0;
+        uint16_t check_csum = do_tcp_csum((uint8_t *) tcp, 20, IPP_TCP, ntohl(ih->saddr), ntohl(ih->daddr));
+        if (packet_csum != check_csum) goto dropkt;
+
+        // release the lock
+        pthread_mutex_lock(&tcp_connect_lock);
+        waiting = 1;
+        printf("---------------------------SENING SIGNAL.. 2\n\n");
+        pthread_cond_signal(&server_synack_ok);
+        pthread_mutex_unlock(&tcp_connect_lock);
     }
 
     dropkt:
     // todo if checksum is not correct and we are dropping packet,
     //  then we should notify connect() to re-transmit
-    printf("todo drop packet");
+    printf("todo drop packet\n");
     //freesub(sub); // this throws error
 }

@@ -78,9 +78,9 @@ int wait_for_server(int max_seconds) {
     struct timespec ts;
     struct timeval  tp;
 
-    rc = pthread_mutex_lock(&tcp_connect_lock);
+    pthread_mutex_trylock(&tcp_connect_lock);
     gettimeofday(&tp, NULL);
-    
+
     ts.tv_sec = tp.tv_sec;
     ts.tv_nsec = tp.tv_usec * 1000;
     ts.tv_sec += max_seconds;
@@ -91,10 +91,10 @@ int wait_for_server(int max_seconds) {
         if(rc == ETIMEDOUT){
             printf("\nTIMED OUT - ABORT\n");
             rc = pthread_mutex_unlock(&tcp_connect_lock);
-            return -1; 
+            return -1;
         }
     }
-    
+
     // We have been signae=led, the waiting is over!
     waiting = 0; // Reset thread waiting predicate for next use.
     return 1;
@@ -191,20 +191,24 @@ ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
         // send second time (or more)
         do {
             printf("\nRESENDING PACKET (%i)\n", count);
-            if (ip_output(tcb->rip, sub) < 0) sleep(1); else break;
+            struct subuff *sub2 = allocate_tcp_send(tcb, buf, len);
+            int ret = ip_output(tcb->rip, sub2);
+            if (ret < 0) sleep(1); else break;
             count++;
         } while (count <= 3);
     }
     if (count == 2) {
+        printf("\nABORT - SENT 3 times\n", count);
         tcb->state = SOCK_CLOSED;
         errno = ETIMEDOUT;
         return -ETIMEDOUT;
     }
 
     // lock until server responds with syn-ack
-    printf("\n\nLOCKING FOR PACKET\n\n");
-    ret = wait_for_server(3);
-    if (ret < 1) {
+    waiting = 0;
+    int wait_ret = wait_for_server(3);
+    if (wait_ret < 1) {
+        printf("\n\nSERVER DID NOT RESPOND WITH ACK\n\n");
         tcb->state = SOCK_CLOSED;
         errno = ETIMEDOUT;
         return -ETIMEDOUT;
