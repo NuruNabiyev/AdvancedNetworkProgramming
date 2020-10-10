@@ -13,6 +13,7 @@
 #include "anp_netdev.h"
 #include "ip.h"
 #include <time.h>
+#include <sys/time.h>
 
 static int (*__start_main)(int (*main)(int, char **, char **), int argc, \
         char **ubp_av, void (*init)(void), void (*fini)(void), \
@@ -67,58 +68,8 @@ void assign_sockets(struct tcblock *tcb, const struct sockaddr *addr, socklen_t 
     tcb->lport = rport; // can be what ever we want
 }
 
-void update_tcp_syn(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
-    tcpHdr->src_port = ntohs(tcb->lport);
-    tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = htonl(get_random_number()); // todo save on repeat
-    tcb->iss = tcpHdr->seq_num;
-    tcpHdr->data_offset = 10;
-    tcpHdr->syn = 1;
-    tcpHdr->window = ntohs(65495);
-    tcpHdr->csum = 0;
-
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
-    tcpHdr->csum = csum;
-}
-
-void update_tcp_ack(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
-    tcpHdr->src_port = ntohs(tcb->lport);
-    tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
-    tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
-
-    tcpHdr->data_offset = 10;
-    tcpHdr->ack = 1;
-    tcpHdr->window = ntohs(512);
-    tcpHdr->csum = 0;
-
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
-    tcpHdr->csum = csum;
-}
-
-struct subuff *alloc_tcp_sub(struct tcblock *tcb, bool syn_or_ack) {
-    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
-    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN);
-    if (!sub) {
-        printf("Error: allocation of the arp sub in request failed \n");
-        return NULL;
-    }
-    sub->protocol = IPP_TCP;
-    struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, TCP_LEN);
-
-    // create tcp packet based on the syn or ack
-    if (syn_or_ack) {
-        // prepare TCP struct with related fields in correct network byte order  and checksum
-        update_tcp_syn(tcb, syntcp);
-    } else {
-        update_tcp_ack(tcb, syntcp);
-    }
-
-    return sub;
-}
-
 int send_first_seq(struct tcblock *tcb) {
-    struct subuff *sub = alloc_tcp_sub(tcb, true);
+    struct subuff *sub = alloc_tcp_connect(tcb, true);
     return ip_output(tcb->rip, sub);
 }
 
@@ -135,6 +86,7 @@ int wait_for_server(int max_seconds) {
     ts.tv_sec += max_seconds;
 
     while(waiting == 0){
+        printf("\nLOCKING FOR PACKET ACK\n");
         rc = pthread_cond_timedwait(&server_synack_ok, &tcp_connect_lock, &ts);
         if(rc == ETIMEDOUT){
             printf("\nTIMED OUT - ABORT\n");
@@ -211,7 +163,7 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     }
 
     // send ack
-    struct subuff *sub_ack = alloc_tcp_sub(tcb, false);
+    struct subuff *sub_ack = alloc_tcp_connect(tcb, false);
     ret = ip_output(tcb->rip, sub_ack);
     if (ret != -1) {
         tcb->state = SOCK_ESTABLISHED;
@@ -223,16 +175,42 @@ int connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
     return -ENOSYS;
 }
 
-// TODO: ANP milestone 5 -- implement the send, recv, and close calls
 ssize_t send(int sockfd, const void *buf, size_t len, int flags) {
-    //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
-    bool is_anp_sockfd = false;
-    if (is_anp_sockfd) {
-        //TODO: implement your logic here
-        return -ENOSYS;
+    printf("SEND CALLED:\n");
+    if (!check_sockfd(sockfd)) {
+        // the default path
+        return _send(sockfd, buf, len, flags);
     }
-    // the default path
-    return _send(sockfd, buf, len, flags);
+
+    struct tcblock *tcb = get_tcb_by_fd(sockfd);
+    struct subuff *sub = allocate_tcp_send(tcb, buf, len);
+    int ret = ip_output(tcb->rip, sub);
+    int count = 1;
+
+    if (ret < 0) {
+        // send second time (or more)
+        do {
+            printf("\nRESENDING PACKET (%i)\n", count);
+            if (ip_output(tcb->rip, sub) < 0) sleep(1); else break;
+            count++;
+        } while (count <= 3);
+    }
+    if (count == 2) {
+        tcb->state = SOCK_CLOSED;
+        errno = ETIMEDOUT;
+        return -ETIMEDOUT;
+    }
+
+    // lock until server responds with syn-ack
+    printf("\n\nLOCKING FOR PACKET\n\n");
+    ret = wait_for_server(3);
+    if (ret < 1) {
+        tcb->state = SOCK_CLOSED;
+        errno = ETIMEDOUT;
+        return -ETIMEDOUT;
+    }
+
+    return ret;
 }
 
 ssize_t recv(int sockfd, void *buf, size_t len, int flags) {

@@ -84,6 +84,89 @@ void free_fc_cache() {
     }
 }
 
+struct subuff *alloc_tcp_connect(struct tcblock *tcb, bool syn_or_ack) {
+    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_40);
+    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_40);
+    if (!sub) {
+        printf("Error: allocation of the arp sub in request failed \n");
+        return NULL;
+    }
+    sub->protocol = IPP_TCP;
+    struct tcp_hdr *syntcp = (struct tcp_hdr *) sub_push(sub, TCP_LEN_40);
+
+    // create tcp packet based on the syn or ack
+    if (syn_or_ack) {
+        // prepare TCP struct with related fields in correct network byte order  and checksum
+        update_tcp_syn(tcb, syntcp);
+    } else {
+        update_tcp_ack(tcb, syntcp);
+    }
+
+    return sub;
+}
+
+void update_tcp_syn(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
+    tcpHdr->src_port = ntohs(tcb->lport);
+    tcpHdr->dest_port = ntohs(tcb->rport);
+    tcpHdr->seq_num = htonl(get_random_number()); // todo save on repeat
+    tcb->iss = tcpHdr->seq_num;
+    tcpHdr->data_offset = 10;
+    tcpHdr->syn = 1;
+    tcpHdr->window = ntohs(65495);
+    tcpHdr->csum = 0;
+
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_40, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
+    tcpHdr->csum = csum;
+}
+
+void update_tcp_ack(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
+    tcpHdr->src_port = ntohs(tcb->lport);
+    tcpHdr->dest_port = ntohs(tcb->rport);
+    tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
+    tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
+
+    tcpHdr->data_offset = 10;
+    tcpHdr->ack = 1;
+    tcpHdr->window = ntohs(512);
+    tcpHdr->csum = 0;
+
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_40, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
+    tcpHdr->csum = csum;
+}
+
+struct subuff *allocate_tcp_send(struct tcblock *tcb, const void *buf, size_t len) {
+    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32 + len);
+    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32 + len);
+    if (!sub) {
+        printf("Error: allocation of the arp sub in request failed \n");
+        return NULL;
+    }
+    sub->protocol = IPP_TCP;
+
+    // first push data
+    uint8_t *subdata = sub_push(sub, len);
+    memcpy(subdata, buf, len);
+
+    // now push header
+    struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN_32);
+    tcpHdr->src_port = ntohs(tcb->lport);
+    tcpHdr->dest_port = ntohs(tcb->rport);
+    tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
+    tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
+    tcb->snd_nxt = htonl(ntohl(tcb->iss) + 1 + len);
+    tcpHdr->data_offset = 8;
+    tcpHdr->ack = 1;
+    tcpHdr->push = 1;
+    tcpHdr->window = ntohs(502);
+    tcpHdr->csum = 0;
+
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32 + len,
+                                IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
+    tcpHdr->csum = csum;
+
+    return sub;
+}
+
 void tcp_rx(struct subuff *sub) {
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
     struct tcp_hdr *tcp = (struct tcp_hdr *) (ih->data);
@@ -109,7 +192,10 @@ void tcp_rx(struct subuff *sub) {
         printf("---------------------------SENING SIGNAL..\n\n");
         pthread_cond_signal(&server_synack_ok);
         pthread_mutex_unlock(&tcp_connect_lock);
-    
+    }
+
+    if (tcp->ack == 1) {
+        printf("\n\nRECEIVED ACK FOR OUT PACKET???\n\n");
     }
 
     dropkt:
