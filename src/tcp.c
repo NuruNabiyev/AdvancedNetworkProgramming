@@ -154,10 +154,11 @@ struct subuff *allocate_tcp_send(struct tcblock *tcb, const void *buf, size_t le
     tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
     tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
     tcb->snd_nxt = htonl(ntohl(tcb->iss) + 1 + len);
+    tcb->rcv_nxt = ntohl(tcb->serv_seq) + 1;
     tcpHdr->data_offset = 8;
     tcpHdr->ack = 1;
     tcpHdr->push = 1;
-    tcpHdr->window = ntohs(502);
+    tcpHdr->window = ntohs(4502);
     tcpHdr->csum = 0;
 
     uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32 + len,

@@ -236,22 +236,20 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
     struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN_32);
     tcpHdr->src_port = ntohs(tcb->lport);
     tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = tcb->snd_nxt; // todo set properly
-    tcpHdr->ack_num = tcb->snd_nxt; // todo set properly (should be rcv_next?)
-    tcpHdr->data_offset = 10;
+    tcpHdr->seq_num = tcb->snd_nxt;
+    tcpHdr->ack_num = htonl(tcb->rcv_nxt + len);
+    tcpHdr->data_offset = 8;
     tcpHdr->ack = 1;
-    tcpHdr->window = ntohs(480);
+    tcpHdr->window = ntohs(5480);
     tcpHdr->csum = 0;
     uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
     tcpHdr->csum = csum;
     int ret = ip_output(tcb->rip, sub);
-    printf("\t send ret is %i\n", ret);
-    sleep(1);
-    return -ENOSYS;
+    return len;
 }
 
 int close(int sockfd) {
-    //FIXME -- you can remember the file descriptors that you have generated in the socket call and match them here
+    printf("\n\n---------------------------CLOSE CALLED------------\n\n");
     bool is_anp_sockfd = false;
     if (is_anp_sockfd) {
         //TODO: implement your logic here
