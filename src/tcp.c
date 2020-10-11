@@ -171,6 +171,7 @@ void tcp_rx(struct subuff *sub) {
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
     struct tcp_hdr *tcp = (struct tcp_hdr *) (ih->data);
 
+    // receiving handshake
     if (tcp->ack == 1 && tcp->syn == 1) {
         // check the checksum
         uint16_t packet_csum = tcp->csum;
@@ -194,6 +195,7 @@ void tcp_rx(struct subuff *sub) {
         return;
     }
 
+    // receiving ack for our packet  todo if its receive packet not whole
     if (tcp->ack == 1 && tcp->push == 0) {
         printf("\n\nRECEIVED ACK FOR PACKET\n");
         debug_tcp(tcp);
@@ -210,6 +212,7 @@ void tcp_rx(struct subuff *sub) {
         printf("---------------------------SENING SIGNAL.. 2\n\n");
         pthread_cond_signal(&server_synack_ok);
         pthread_mutex_unlock(&tcp_connect_lock);
+        return;
     }
 
     dropkt:
