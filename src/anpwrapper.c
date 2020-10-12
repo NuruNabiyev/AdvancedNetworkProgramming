@@ -74,9 +74,9 @@ int send_first_seq(struct tcblock *tcb) {
 }
 
 int wait_for_server(int max_seconds) {
-    int             rc;
+    int rc;
     struct timespec ts;
-    struct timeval  tp;
+    struct timeval tp;
 
     pthread_mutex_trylock(&tcp_connect_lock);
     gettimeofday(&tp, NULL);
@@ -85,10 +85,10 @@ int wait_for_server(int max_seconds) {
     ts.tv_nsec = tp.tv_usec * 1000;
     ts.tv_sec += max_seconds;
 
-    while(waiting == 0){
+    while (waiting == 0) {
         printf("\nLOCKING FOR PACKET ACK\n");
         rc = pthread_cond_timedwait(&server_synack_ok, &tcp_connect_lock, &ts);
-        if(rc == ETIMEDOUT){
+        if (rc == ETIMEDOUT) {
             printf("\nTIMED OUT - ABORT\n");
             rc = pthread_mutex_unlock(&tcp_connect_lock);
             return -1;
@@ -221,7 +221,8 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
     printf("RECEIVE packet with length %zi:\n", len);
     if (!check_sockfd(sockfd)) {
         // the default path
-        return _recv(sockfd, buf, len, flags); }
+        return _recv(sockfd, buf, len, flags);
+    }
 
     // skipping checksum checking
     struct tcblock *tcb = get_tcb_by_fd(sockfd);
@@ -256,30 +257,10 @@ int close(int sockfd) {
     }
 
     struct tcblock *tcb = get_tcb_by_fd(sockfd);
-    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
-    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
-    if (!sub) {
-        printf("Error: allocation of the arp sub in request failed \n");
-        return NULL;
-    }
-    sub->protocol = IPP_TCP;
-    struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN_32);
-    tcpHdr->src_port = ntohs(tcb->lport);
-    tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = tcb->snd_nxt;
-    tcpHdr->ack_num = htonl(tcb->rcv_nxt);
-    //tcb->rcv_nxt = ntohl(tcpHdr->ack_num);
-    tcpHdr->data_offset = 8;
-    tcpHdr->ack = 1;
-    tcpHdr->fin = 1;
-    tcpHdr->window = ntohs(512);
-    tcpHdr->csum = 0;
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
-    tcpHdr->csum = csum;
+    struct subuff *sub = alloc_tcp_finack(tcb);
     int ret = ip_output(tcb->rip, sub);
-    printf("\n\nFIN SENT %i\n\n", ret);
 
-    // todo lock and wait here until  in tcp_rx we will receive fin/ack from server
+    // lock and wait here until in tcp_rx receives fin/ack from server
     ret = wait_for_server(3);
     if (ret < 1) {
         tcb->state = SOCK_CLOSED;
@@ -287,17 +268,16 @@ int close(int sockfd) {
         return -ETIMEDOUT;
     }
 
-    // send ack
-   struct subuff *sub_ack = alloc_tcp_connect(tcb, false);
-   ret = ip_output(tcb->rip, sub_ack);
-   if (ret != -1) {
-    // todo clear tcb and remove from list, return 0 on success
-       tcb->state = SOCK_CLOSED;
-       errno = 0;
-       return 0;
-   }
-
-
+    // send our last ack
+    struct subuff *sub_ack = alloc_tcp_lastack(tcb);
+    ret = ip_output(tcb->rip, sub_ack);
+    if (ret != -1) {
+        // clear tcb and remove from list, return 0 on success
+        tcb->state = SOCK_CLOSED;
+        errno = 0;
+        return 0;
+    }
+    sleep(1);
     errno = ENOSYS;
     return -ENOSYS;
 }
