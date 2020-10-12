@@ -221,8 +221,7 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
     printf("RECEIVE packet with length %zi:\n", len);
     if (!check_sockfd(sockfd)) {
         // the default path
-        return _recv(sockfd, buf, len, flags);
-    }
+        return _recv(sockfd, buf, len, flags); }
 
     // skipping checksum checking
     struct tcblock *tcb = get_tcb_by_fd(sockfd);
@@ -281,11 +280,25 @@ int close(int sockfd) {
     printf("\n\nFIN SENT %i\n\n", ret);
 
     // todo lock and wait here until  in tcp_rx we will receive fin/ack from server
+    ret = wait_for_server(3);
+    if (ret < 1) {
+        tcb->state = SOCK_CLOSED;
+        errno = ETIMEDOUT;
+        return -ETIMEDOUT;
+    }
 
-    // todo when unlocked we should send ack to server
-
+    // send ack
+   struct subuff *sub_ack = alloc_tcp_connect(tcb, false);
+   ret = ip_output(tcb->rip, sub_ack);
+   if (ret != -1) {
     // todo clear tcb and remove from list, return 0 on success
+       tcb->state = SOCK_CLOSED;
+       errno = 0;
+       return 0;
+   }
 
+
+    errno = ENOSYS;
     return -ENOSYS;
 }
 

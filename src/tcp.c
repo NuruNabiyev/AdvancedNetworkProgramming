@@ -216,6 +216,25 @@ void tcp_rx(struct subuff *sub) {
         return;
     }
 
+    // receiving fin/ack
+    if(tcp->ack == 1 && tcp->fin == 1){
+        printf("\n\nRECEIVED FIN-ACK FOR CLOSE\n");
+        debug_tcp(tcp);
+
+        // check the checksum
+        uint16_t packet_csum = tcp->csum;
+        tcp->csum = 0;
+        uint16_t check_csum = do_tcp_csum((uint8_t *) tcp, 20, IPP_TCP, ntohl(ih->saddr), ntohl(ih->daddr));
+        if (packet_csum != check_csum) goto dropkt;
+
+        // release the lock
+        pthread_mutex_lock(&tcp_connect_lock);
+        waiting = 1;
+        printf("---------------------------SENING SIGNAL.. 3\n\n");
+        pthread_cond_signal(&server_synack_ok);
+        pthread_mutex_unlock(&tcp_connect_lock);
+        return;
+    }
     dropkt:
     // todo if checksum is not correct and we are dropping packet,
     //  then we should notify connect() to re-transmit
