@@ -35,6 +35,7 @@ int dst_neigh_output(struct subuff *sub) {
 }
 
 int ip_output(uint32_t dst_ip_addr, struct subuff *sub) {
+    printf("<<BENCHMARK>>int ip_output(uint32_t dst_ip_addr, struct subuff *sub)\n");
     struct rtentry *rt;
     struct iphdr *ihdr = IP_HDR_FROM_SUB(sub);
 
@@ -62,7 +63,7 @@ int ip_output(uint32_t dst_ip_addr, struct subuff *sub) {
     ihdr->daddr       = dst_ip_addr;
     ihdr->csum        = 0;
 
-    debug_ip_hdr("out", ihdr);
+    /* debug_ip_hdr("out", ihdr); */
 
     ihdr->len         = htons(ihdr->len);
     ihdr->id          = htons(ihdr->id);

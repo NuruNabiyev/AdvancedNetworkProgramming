@@ -106,28 +106,28 @@ struct subuff *alloc_tcp_connect(struct tcblock *tcb, bool syn_or_ack) {
 }
 
 void update_tcp_syn(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
-    tcpHdr->src_port = ntohs(tcb->lport);
-    tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = htonl(get_random_number()); // todo save on repeat
-    tcb->iss = tcpHdr->seq_num;
+    tcpHdr->src_port    = ntohs(tcb->lport);
+    tcpHdr->dest_port   = ntohs(tcb->rport);
+    tcpHdr->seq_num     = htonl(get_random_number()); // todo save on repeat
+    tcb->iss            = tcpHdr->seq_num;
     tcpHdr->data_offset = 10;
-    tcpHdr->syn = 1;
-    tcpHdr->window = ntohs(65495);
-    tcpHdr->csum = 0;
+    tcpHdr->syn         = 1;
+    tcpHdr->window      = ntohs(65495);
+    tcpHdr->csum        = 0;
 
     uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_40, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
     tcpHdr->csum = csum;
 }
 
 void update_tcp_ack(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
-    tcpHdr->src_port = ntohs(tcb->lport);
-    tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
-    tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
+    tcpHdr->src_port    = ntohs(tcb->lport);
+    tcpHdr->dest_port   = ntohs(tcb->rport);
+    tcpHdr->seq_num     = htonl(ntohl(tcb->iss) + 1);
+    tcpHdr->ack_num     = htonl(ntohl(tcb->serv_seq) + 1);
     tcpHdr->data_offset = 10;
-    tcpHdr->ack = 1;
-    tcpHdr->window = ntohs(512);
-    tcpHdr->csum = 0;
+    tcpHdr->ack         = 1;
+    tcpHdr->window      = ntohs(512);
+    tcpHdr->csum        = 0;
 
     uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_40, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
     tcpHdr->csum = csum;
@@ -148,17 +148,17 @@ struct subuff *allocate_tcp_send(struct tcblock *tcb, const void *buf, size_t le
 
     // now push header
     struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN_32);
-    tcpHdr->src_port = ntohs(tcb->lport);
-    tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
-    tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
-    tcb->snd_nxt = htonl(ntohl(tcb->iss) + 1 + len);
-    tcb->rcv_nxt = ntohl(tcb->serv_seq) + 1;
-    tcpHdr->data_offset = 8;
-    tcpHdr->ack = 1;
-    tcpHdr->push = 1;
-    tcpHdr->window = ntohs(4502);
-    tcpHdr->csum = 0;
+    tcpHdr->src_port       = ntohs(tcb->lport);
+    tcpHdr->dest_port      = ntohs(tcb->rport);
+    tcpHdr->seq_num        = htonl(ntohl(tcb->iss) + 1);
+    tcpHdr->ack_num        = htonl(ntohl(tcb->serv_seq) + 1);
+    tcb->snd_nxt           = htonl(ntohl(tcb->iss) + 1 + len);
+    tcb->rcv_nxt           = ntohl(tcb->serv_seq) + 1;
+    tcpHdr->data_offset    = 8;
+    tcpHdr->ack            = 1;
+    tcpHdr->push           = 1;
+    tcpHdr->window         = ntohs(4502);
+    tcpHdr->csum           = 0;
 
     uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32 + len,
                                 IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
@@ -174,45 +174,46 @@ struct subuff *alloc_tcp_finack(struct tcblock *tcb) {
         printf("Error: allocation of the arp sub in request failed \n");
         return NULL;
     }
-    sub->protocol = IPP_TCP;
+    sub->protocol          = IPP_TCP;
     struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN_32);
-    tcpHdr->src_port = ntohs(tcb->lport);
-    tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = tcb->snd_nxt;
-    tcpHdr->ack_num = htonl(tcb->rcv_nxt);
-    tcpHdr->data_offset = 8;
-    tcpHdr->ack = 1;
-    tcpHdr->fin = 1;
-    tcpHdr->window = ntohs(512);
-    tcpHdr->csum = 0;
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
-    tcpHdr->csum = csum;
+    tcpHdr->src_port       = ntohs(tcb->lport);
+    tcpHdr->dest_port      = ntohs(tcb->rport);
+    tcpHdr->seq_num        = tcb->snd_nxt;
+    tcpHdr->ack_num        = htonl(tcb->rcv_nxt);
+    tcpHdr->data_offset    = 8;
+    tcpHdr->ack            = 1;
+    tcpHdr->fin            = 1;
+    tcpHdr->window         = ntohs(512);
+    tcpHdr->csum           = 0;
+    uint16_t csum          = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
+    tcpHdr->csum           = csum;
     return sub;
 }
 
 struct subuff *alloc_tcp_lastack(struct tcblock *tcb) {
-    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
+    struct subuff *sub     = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
     sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
     if (!sub) {
         printf("Error: allocation of the arp sub in request failed \n");
         return NULL;
     }
-    sub->protocol = IPP_TCP;
+    sub->protocol          = IPP_TCP;
     struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN_32);
-    tcpHdr->src_port = ntohs(tcb->lport);
-    tcpHdr->dest_port = ntohs(tcb->rport);
-    tcpHdr->seq_num = htonl(ntohl(tcb->snd_nxt) + 1);
-    tcpHdr->ack_num = htonl(tcb->rcv_nxt + 1);
-    tcpHdr->data_offset = 8;
-    tcpHdr->ack = 1;
-    tcpHdr->window = ntohs(512);
-    tcpHdr->csum = 0;
-    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
-    tcpHdr->csum = csum;
+    tcpHdr->src_port       = ntohs(tcb->lport);
+    tcpHdr->dest_port      = ntohs(tcb->rport);
+    tcpHdr->seq_num        = htonl(ntohl(tcb->snd_nxt) + 1);
+    tcpHdr->ack_num        = htonl(tcb->rcv_nxt + 1);
+    tcpHdr->data_offset    = 8;
+    tcpHdr->ack            = 1;
+    tcpHdr->window         = ntohs(512);
+    tcpHdr->csum           = 0;
+    uint16_t csum          = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
+    tcpHdr->csum           = csum;
     return sub;
 }
 
 void tcp_rx(struct subuff *sub) {
+    /* TODO:  <13-10-20,matthiasdebernardini> timer point */
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
     struct tcp_hdr *tcp = (struct tcp_hdr *) (ih->data);
 
@@ -241,9 +242,10 @@ void tcp_rx(struct subuff *sub) {
     }
 
     // receiving ack for our packet  todo if its receive packet not whole
+    /* TODO:  <13-10-20, matthiasdebernardini> todo if its receive packet not whole  */
     if (tcp->ack == 1 && tcp->push == 0) {
         printf("\n\nRECEIVED ACK FOR PACKET\n");
-        debug_tcp(tcp);
+        /* debug_tcp(tcp); */
 
         // check the checksum
         uint16_t packet_csum = tcp->csum;
@@ -263,7 +265,7 @@ void tcp_rx(struct subuff *sub) {
     // receiving fin/ack
     if(tcp->ack == 1 && tcp->fin == 1) {
         printf("\n\nRECEIVED FIN-ACK FOR CLOSE\n");
-        debug_tcp(tcp);
+        /* debug_tcp(tcp); */
 
         // check the checksum
         uint16_t packet_csum = tcp->csum;

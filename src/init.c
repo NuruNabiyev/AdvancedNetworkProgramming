@@ -32,11 +32,12 @@ void ctrl_c_handler(int val) {
 static void init_threads() {
     // we have two async activities
     create_thread(THREAD_RX, netdev_rx_loop);
+    //TODO what are timers?
     create_thread(THREAD_TIMER, timers_start);
 }
 
 void __attribute__ ((constructor)) _init_anp_netstack() {
-    //https://stackoverflow.com/questions/3275015/ld-preload-affects-new-child-even-after-unsetenvld-preload
+    // https://stackoverflow.com/questions/3275015/ld-preload-affects-new-child-even-after-unsetenvld-preload
     // uff, what a mess. So, if there are exec (which is in the system call, it fork bombs, hence it is
     // quite important to unset thr LD_PRELOAD once we are here
 #ifdef ANP_DEBUG
@@ -53,6 +54,7 @@ void __attribute__ ((constructor)) _init_anp_netstack() {
 #endif
     printf("Hello there, I am ANP networking stack!\n");
     _function_override_init();
+
     // this is the external end, at 10.0.0.5
     tdev_init();
     // this is the client end, at 10.0.0.4

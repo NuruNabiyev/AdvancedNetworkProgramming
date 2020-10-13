@@ -54,7 +54,7 @@ static int get_mac(const char *iface, uint8_t *mac) {
         exit(0);
     }
     close(fd);
-    for(int i = 0; i < 6; i++) {
+    for (int i = 0; i < 6; i++) {
         mac[i] = ifr.ifr_hwaddr.sa_data[i];
     }
     return 0;
@@ -99,6 +99,7 @@ void *netdev_rx_loop() {
     while (!stop) {
         // The max size of ethernet packet over 1500 MTU (including additional headers */
         // https://searchnetworking.techtarget.com/answer/Minimum-and-maximum-Ethernet-frame-sizes
+        //TODO moment it gets allocated, bench how long it takes for it to do something useful
         struct subuff *sub = alloc_sub(ANP_MTU_15_MAX_SIZE);
         ret = tdev_read((char *)sub->data, ANP_MTU_15_MAX_SIZE);
         if (ret < 0) {

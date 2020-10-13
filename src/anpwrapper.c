@@ -50,7 +50,7 @@ void assign_sockets(struct tcblock *tcb, const struct sockaddr *addr, socklen_t 
     // retrieve port and ip and prepare current tcblock
     char rips[NI_MAXHOST], rports[NI_MAXSERV];
     int rc = getnameinfo(addr, addrlen, rips, sizeof(rips), rports, sizeof(rports),
-                         NI_NUMERICHOST | NI_NUMERICSERV);
+            NI_NUMERICHOST | NI_NUMERICSERV);
     printf("rc %i, host %s, port %s\n", rc, rips, rports);
     struct sockaddr_in sa;
     inet_pton(AF_INET, rips, &(sa.sin_addr));
@@ -225,8 +225,8 @@ ssize_t recv(int sockfd, void *buf, size_t len, int flags) {
     }
 
     // skipping checksum checking
-    struct tcblock *tcb    = get_tcb_by_fd(sockfd);
-    struct subuff *sub     = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
+    struct tcblock *tcb = get_tcb_by_fd(sockfd);
+    struct subuff *sub  = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
     sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
     if (!sub) {
         printf("Error: allocation of the arp sub in request failed \n");
@@ -257,7 +257,7 @@ int close(int sockfd) {
     }
 
     struct tcblock *tcb = get_tcb_by_fd(sockfd);
-    struct subuff *sub = alloc_tcp_finack(tcb);
+    struct subuff *sub  = alloc_tcp_finack(tcb);
     int ret = ip_output(tcb->rip, sub);
 
     // lock and wait here until in tcp_rx receives fin/ack from server
@@ -283,11 +283,10 @@ int close(int sockfd) {
 }
 
 void _function_override_init() {
-    printf("void _function_override_init() \n");
     __start_main = dlsym(RTLD_NEXT, "__libc_start_main");
-    _socket = dlsym(RTLD_NEXT, "socket");
-    _connect = dlsym(RTLD_NEXT, "connect");
-    _send = dlsym(RTLD_NEXT, "send");
-    _recv = dlsym(RTLD_NEXT, "recv");
-    _close = dlsym(RTLD_NEXT, "close");
+    _socket      = dlsym(RTLD_NEXT, "socket");
+    _connect     = dlsym(RTLD_NEXT, "connect");
+    _send        = dlsym(RTLD_NEXT, "send");
+    _recv        = dlsym(RTLD_NEXT, "recv");
+    _close       = dlsym(RTLD_NEXT, "close");
 }

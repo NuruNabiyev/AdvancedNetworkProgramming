@@ -22,7 +22,7 @@ int ip_rx(struct subuff *sub) {
         printf("ERROR: zero time to live, ttl, dropping packet \n");
         goto drop_pkt;
     }
-
+    //TODO check overhead of doing checksum?
     csum = do_csum(ih, ih->ihl * 4, 0);
 
     if (csum != 0) {
@@ -32,24 +32,25 @@ int ip_rx(struct subuff *sub) {
 
     ih->saddr = ntohl(ih->saddr);
     ih->daddr = ntohl(ih->daddr);
-    ih->len =   ntohs(ih->len);
-    ih->id =    ntohs(ih->id);
+    ih->len   = ntohs(ih->len);
+    ih->id    = ntohs(ih->id);
 
-    // todo delete later because i receive these dns
+    // TODO delete later because i receive these dns
     if (ih->proto == 17 || ih->proto == 2) {
         printf("nope (%i)", ih->proto);
         return 0;
     }
 
-    debug_ip_hdr("in", ih);
+    /* debug_ip_hdr("in", ih); */
 
     switch (ih->proto) {
         case IPP_NUM_ICMP:
-            debug_ip("incoming ICMP packet\n");
+            /* debug_ip("incoming ICMP packet\n"); */
             icmp_rx(sub);
             return 0;
         case IPP_TCP:
-            debug_ip("incoming TCP packet\n");
+            /* debug_ip("incoming TCP packet\n"); */
+            /* TODO:  <13-10-20,matthiasdebernardini> moment we find out we have a TCP*/
             tcp_rx(sub);
             goto drop_pkt;
         default:

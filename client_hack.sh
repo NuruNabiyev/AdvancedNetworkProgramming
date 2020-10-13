@@ -10,7 +10,7 @@ sudo make
 sudo make install
 
 # path to your client
-anp_client_path="/home/nuru/Documents/simple-server-client-master/bin/anp_client"
-myIp="192.168.43.63"  # use hostname -I and select first one
-myPort="12111"
+anp_client_path="/home/m/gits/anp-netstack/bin/anp_client"
+myIp="192.168.178.115"  # use hostname -I and select first one
+myPort="12345"
 sudo ./bin/sh-hack-anp.sh $anp_client_path $myIp $myPort
