@@ -124,7 +124,6 @@ void update_tcp_ack(struct tcblock *tcb, struct tcp_hdr *tcpHdr) {
     tcpHdr->dest_port = ntohs(tcb->rport);
     tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
     tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
-
     tcpHdr->data_offset = 10;
     tcpHdr->ack = 1;
     tcpHdr->window = ntohs(512);
@@ -154,10 +153,11 @@ struct subuff *allocate_tcp_send(struct tcblock *tcb, const void *buf, size_t le
     tcpHdr->seq_num = htonl(ntohl(tcb->iss) + 1);
     tcpHdr->ack_num = htonl(ntohl(tcb->serv_seq) + 1);
     tcb->snd_nxt = htonl(ntohl(tcb->iss) + 1 + len);
+    tcb->rcv_nxt = ntohl(tcb->serv_seq) + 1;
     tcpHdr->data_offset = 8;
     tcpHdr->ack = 1;
     tcpHdr->push = 1;
-    tcpHdr->window = ntohs(502);
+    tcpHdr->window = ntohs(4502);
     tcpHdr->csum = 0;
 
     uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32 + len,
@@ -167,10 +167,56 @@ struct subuff *allocate_tcp_send(struct tcblock *tcb, const void *buf, size_t le
     return sub;
 }
 
+struct subuff *alloc_tcp_finack(struct tcblock *tcb) {
+    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
+    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
+    if (!sub) {
+        printf("Error: allocation of the arp sub in request failed \n");
+        return NULL;
+    }
+    sub->protocol = IPP_TCP;
+    struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN_32);
+    tcpHdr->src_port = ntohs(tcb->lport);
+    tcpHdr->dest_port = ntohs(tcb->rport);
+    tcpHdr->seq_num = tcb->snd_nxt;
+    tcpHdr->ack_num = htonl(tcb->rcv_nxt);
+    tcpHdr->data_offset = 8;
+    tcpHdr->ack = 1;
+    tcpHdr->fin = 1;
+    tcpHdr->window = ntohs(512);
+    tcpHdr->csum = 0;
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
+    tcpHdr->csum = csum;
+    return sub;
+}
+
+struct subuff *alloc_tcp_lastack(struct tcblock *tcb) {
+    struct subuff *sub = alloc_sub(ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
+    sub_reserve(sub, ETH_HDR_LEN + IP_HDR_LEN + TCP_LEN_32);
+    if (!sub) {
+        printf("Error: allocation of the arp sub in request failed \n");
+        return NULL;
+    }
+    sub->protocol = IPP_TCP;
+    struct tcp_hdr *tcpHdr = (struct tcp_hdr *) sub_push(sub, TCP_LEN_32);
+    tcpHdr->src_port = ntohs(tcb->lport);
+    tcpHdr->dest_port = ntohs(tcb->rport);
+    tcpHdr->seq_num = htonl(ntohl(tcb->snd_nxt) + 1);
+    tcpHdr->ack_num = htonl(tcb->rcv_nxt + 1);
+    tcpHdr->data_offset = 8;
+    tcpHdr->ack = 1;
+    tcpHdr->window = ntohs(512);
+    tcpHdr->csum = 0;
+    uint16_t csum = do_tcp_csum((uint8_t *) tcpHdr, TCP_LEN_32, IPP_TCP, htonl(tcb->lip), htonl(tcb->rip));
+    tcpHdr->csum = csum;
+    return sub;
+}
+
 void tcp_rx(struct subuff *sub) {
     struct iphdr *ih = IP_HDR_FROM_SUB(sub);
     struct tcp_hdr *tcp = (struct tcp_hdr *) (ih->data);
 
+    // receiving handshake
     if (tcp->ack == 1 && tcp->syn == 1) {
         // check the checksum
         uint16_t packet_csum = tcp->csum;
@@ -187,20 +233,55 @@ void tcp_rx(struct subuff *sub) {
         si->serv_seq = tcp->seq_num;
         // release the lock
         pthread_mutex_lock(&tcp_connect_lock);
-        //server_synack_ok = true;
         waiting = 1;
         printf("---------------------------SENING SIGNAL..\n\n");
         pthread_cond_signal(&server_synack_ok);
         pthread_mutex_unlock(&tcp_connect_lock);
+        return;
     }
 
-    if (tcp->ack == 1) {
-        printf("\n\nRECEIVED ACK FOR OUT PACKET???\n\n");
+    // receiving ack for our packet  todo if its receive packet not whole
+    if (tcp->ack == 1 && tcp->push == 0) {
+        printf("\n\nRECEIVED ACK FOR PACKET\n");
+        debug_tcp(tcp);
+
+        // check the checksum
+        uint16_t packet_csum = tcp->csum;
+        tcp->csum = 0;
+        uint16_t check_csum = do_tcp_csum((uint8_t *) tcp, 20, IPP_TCP, ntohl(ih->saddr), ntohl(ih->daddr));
+        if (packet_csum != check_csum) goto dropkt;
+
+        // release the lock
+        pthread_mutex_lock(&tcp_connect_lock);
+        waiting = 1;
+        printf("---------------------------SENING SIGNAL.. 2\n\n");
+        pthread_cond_signal(&server_synack_ok);
+        pthread_mutex_unlock(&tcp_connect_lock);
+        return;
     }
 
+    // receiving fin/ack
+    if(tcp->ack == 1 && tcp->fin == 1) {
+        printf("\n\nRECEIVED FIN-ACK FOR CLOSE\n");
+        debug_tcp(tcp);
+
+        // check the checksum
+        uint16_t packet_csum = tcp->csum;
+        tcp->csum = 0;
+        uint16_t check_csum = do_tcp_csum((uint8_t *) tcp, 20, IPP_TCP, ntohl(ih->saddr), ntohl(ih->daddr));
+        if (packet_csum != check_csum) goto dropkt;
+
+        // release the lock
+        pthread_mutex_lock(&tcp_connect_lock);
+        waiting = 1;
+        printf("---------------------------SENING SIGNAL.. 3\n\n");
+        pthread_cond_signal(&server_synack_ok);
+        pthread_mutex_unlock(&tcp_connect_lock);
+        return;
+    }
     dropkt:
     // todo if checksum is not correct and we are dropping packet,
     //  then we should notify connect() to re-transmit
-    printf("todo drop packet");
+    printf("todo drop packet\n");
     //freesub(sub); // this throws error
 }

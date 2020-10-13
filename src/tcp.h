@@ -96,6 +96,10 @@ void update_tcp_ack(struct tcblock *tcb, struct tcp_hdr *tcpHdr);
 
 struct subuff *allocate_tcp_send(struct tcblock *tcb, const void *buf, size_t len);
 
+struct subuff *alloc_tcp_finack(struct tcblock *tcb);
+
+struct subuff *alloc_tcp_lastack(struct tcblock *tcb);
+
 /**
  * Receives incoming tcp packet from IP layer
  * @param sub buffer received
