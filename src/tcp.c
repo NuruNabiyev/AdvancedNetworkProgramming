@@ -261,7 +261,7 @@ void tcp_rx(struct subuff *sub) {
     }
 
     // receiving fin/ack
-    if(tcp->ack == 1 && tcp->fin == 1){
+    if(tcp->ack == 1 && tcp->fin == 1) {
         printf("\n\nRECEIVED FIN-ACK FOR CLOSE\n");
         debug_tcp(tcp);
 
