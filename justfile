@@ -21,7 +21,7 @@ arp:
     gcc ./arpdummy.c -o arpdummy
 
 serve:
-    watchexec -w .git -f index -e c -- ~/gits/anp-netstack/bin/anp_server $IP $PORT
+    watchexec -w .git -- ~/gits/anp-netstack/bin/anp_server $IP $PORT
 
 makerun:
     doas cmake .
@@ -30,7 +30,7 @@ makerun:
     doas ./bin/sh-hack-anp.sh $SIMPLE_CLIENT $IP $PORT
 
 makeloop:
-    watchexec -w .git -f index -e c -- just makerun
+    watchexec -w .git -- just makerun
 
 hack:
     just tundev
