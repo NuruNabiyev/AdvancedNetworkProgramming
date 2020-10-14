@@ -1,0 +1,20 @@
+Running on DAS using prun.
+0
+Graph simple-loop.prom does not contain an accepting cycle.
+1_naive took 17 ms.
+Running on DAS using prun.
+0
+Graph simple-loop.prom does not contain an accepting cycle.
+1_naive took 16 ms.
+Running on DAS using prun.
+0
+Graph simple-loop.prom does not contain an accepting cycle.
+1_naive took 14 ms.
+Running on DAS using prun.
+0
+Graph simple-loop.prom does not contain an accepting cycle.
+1_naive took 15 ms.
+Running on DAS using prun.
+0
+Graph simple-loop.prom does not contain an accepting cycle.
+1_naive took 15 ms.

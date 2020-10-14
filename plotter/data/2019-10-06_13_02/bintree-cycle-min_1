@@ -1,0 +1,25 @@
+Running on DAS using prun.
+0
+Found
+Graph bintree-cycle-min.prom does contain an accepting cycle.
+1_naive took 11647 ms.
+Running on DAS using prun.
+0
+Found
+Graph bintree-cycle-min.prom does contain an accepting cycle.
+1_naive took 10974 ms.
+Running on DAS using prun.
+0
+Found
+Graph bintree-cycle-min.prom does contain an accepting cycle.
+1_naive took 11193 ms.
+Running on DAS using prun.
+0
+Found
+Graph bintree-cycle-min.prom does contain an accepting cycle.
+1_naive took 11254 ms.
+Running on DAS using prun.
+0
+Found
+Graph bintree-cycle-min.prom does contain an accepting cycle.
+1_naive took 11396 ms.

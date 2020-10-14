@@ -1,3 +1,5 @@
+timestamp := `date +%s`
+port := `random-tcp-port/reserve`
 tundev:
     #!/bin/bash
     doas mknod /dev/net/tap c 10 200
@@ -21,21 +23,25 @@ arp:
     gcc ./arpdummy.c -o arpdummy
 
 serve:
-    watchexec -w .git -- ~/gits/anp-netstack/bin/anp_server $IP $PORT
+    watchexec -c -w .git -- ~/gits/anp-netstack/bin/anp_server $IP {{port}}
 
 makerun:
     doas cmake .
     doas make
     doas make install
-    doas ./bin/sh-hack-anp.sh $SIMPLE_CLIENT $IP $PORT
+    doas ./bin/sh-hack-anp.sh $SIMPLE_CLIENT $IP {{port}}
 
 makeloop:
-    watchexec -w .git -- just makerun
+    watchexec -c -w .git -- just makerun
+
+benchmark:
+    just makerun >> benchmark_results/{{timestamp}}
 
 hack:
     just tundev
     just ipvs
 
     just makeloop
+
 
 

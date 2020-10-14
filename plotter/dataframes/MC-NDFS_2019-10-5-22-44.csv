@@ -1,0 +1,2 @@
+threads,implementation,input,contains-cycle,time-to-finish,is_DAS,input_file
+,1_naive,,False,8,True,simple-loop.prom

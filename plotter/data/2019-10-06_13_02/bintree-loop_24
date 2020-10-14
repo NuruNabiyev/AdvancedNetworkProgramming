@@ -1,0 +1,20 @@
+Running on DAS using prun.
+0
+Graph bintree-loop.prom does not contain an accepting cycle.
+1_naive took 11050 ms.
+Running on DAS using prun.
+0
+Graph bintree-loop.prom does not contain an accepting cycle.
+1_naive took 10894 ms.
+Running on DAS using prun.
+0
+Graph bintree-loop.prom does not contain an accepting cycle.
+1_naive took 10961 ms.
+Running on DAS using prun.
+0
+Graph bintree-loop.prom does not contain an accepting cycle.
+1_naive took 11525 ms.
+Running on DAS using prun.
+0
+Graph bintree-loop.prom does not contain an accepting cycle.
+1_naive took 11275 ms.

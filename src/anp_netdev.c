@@ -82,7 +82,6 @@ static int process_packet(struct subuff *sub) {
             break;
         case ETH_P_IP:
             ip_rx(sub);
-ddd   
             break;
         case ETH_P_IPV6:
             printf("Error: Did you forget to disable the ipv6 support?\n");
