@@ -1,5 +1,7 @@
 timestamp := `date +%s`
-port := `random-tcp-port/reserve`
+new_port := `python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
+current_port := `netstat -lt | rg 'smolfrosty' | cut -d':' -f2,5 | awk -F ' ' '{print $1}'`
+
 tundev:
     #!/bin/bash
     doas mknod /dev/net/tap c 10 200
@@ -23,13 +25,15 @@ arp:
     gcc ./arpdummy.c -o arpdummy
 
 serve:
-    watchexec -c -w .git -- ~/gits/anp-netstack/bin/anp_server $IP {{port}}
+    echo {{new_port}} >> current_port
+    watchexec -c -w .git -- ~/gits/anp-netstack/bin/anp_server $IP {{new_port}}
 
 makerun:
     doas cmake .
     doas make
     doas make install
-    doas ./bin/sh-hack-anp.sh $SIMPLE_CLIENT $IP {{port}}
+    echo {{current_port}}
+    doas ./bin/sh-hack-anp.sh $SIMPLE_CLIENT $IP {{current_port}}
 
 makeloop:
     watchexec -c -w .git -- just makerun
@@ -42,6 +46,4 @@ hack:
     just ipvs
 
     just makeloop
-
-
 

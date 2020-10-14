@@ -6,12 +6,7 @@ import re
 if __name__ == '__main__':
     pd.options.display.width = 0
 
-    df = pd.DataFrame(columns=['threads',
-                               'implementation',
-                               'input_file',
-                               'contains-cycle',
-                               'time-to-finish',
-                               'is_DAS'])
+    df = pd.DataFrame(columns=['client_outer_loop','thread']
 
     p = Path('debug_data').glob('**/*')
     dirs = [x for x in p if x.is_dir()]
