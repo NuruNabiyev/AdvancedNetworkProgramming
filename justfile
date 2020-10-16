@@ -2,12 +2,15 @@ timestamp := `date +%s`
 new_port := `python3 -c 'import socket; s=socket.socket(); s.bind(("", 0)); print(s.getsockname()[1]); s.close()'`
 current_port := `netstat -lt | rg 'smolfrosty' | cut -d':' -f2,5 | awk -F ' ' '{print $1}'`
 
+webserver:
+    python3 -m http.server 8000
+
 tundev:
     #!/bin/bash
     doas mknod /dev/net/tap c 10 200
     doas chmod 0666 /dev/net/tap
 
-ipvs:
+ipv6:
     #!/bin/bash
     doas sysctl -w net.ipv6.conf.all.disable_ipv6=1
     doas sysctl -w net.ipv6.conf.default.disable_ipv6=1
@@ -32,7 +35,6 @@ makerun:
     doas cmake .
     doas make
     doas make install
-    echo {{current_port}}
     doas ./bin/sh-hack-anp.sh $SIMPLE_CLIENT $IP {{current_port}}
 
 makeloop:

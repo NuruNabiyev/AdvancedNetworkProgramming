@@ -10,6 +10,7 @@ Here's a good blog explaining why and how to do this (with code):
 http://blogs.perl.org/users/steffen_mueller/2010/09/your-benchmarks-suck.html
 
 # what is cdf
+https://www.quora.com/What-does-it-mean-to-be-in-the-99th-percentile
 Percentile means people behind you.
 
 If you are in the top 10%, your are in the 90th percentile.
@@ -20,3 +21,8 @@ But shouldn’t 100th percentile be the best? No, that’s because you can’t b
 
 So 99.9th percentile is the best, followed by 99.8th percentile. This goes all the way to 0th percentile. It is possible for no one to score worse than you, but it is impossible for everyone (that includes you) to score worse than you. Hence, 0th percentile is possible while 100th percentile is impossible.
 
+# types of time
+https://serverfault.com/questions/48455/what-are-the-differences-between-wall-clock-time-user-time-and-cpu-time
+
+# how to time c code
+https://stackoverflow.com/questions/5248915/execution-time-of-c-program

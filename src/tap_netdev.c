@@ -51,7 +51,6 @@ static int tdev_alloc(struct tap_netdev *dev) {
 
 
 void tdev_init(void) {
-    printf("void tdev_init(void)\n");
     _tdev = calloc(sizeof(struct tap_netdev), 1);
     int ret = -1;
     if (NULL == _tdev) {
