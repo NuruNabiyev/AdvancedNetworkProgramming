@@ -49,6 +49,7 @@ makeloop:
 
 benchmark:
     just makerun >> benchmark_results/{{timestamp}} 
+    grep 'BENCHMARK' benchmark_results/* | cut -d' ' -f2 >> finalresults
 
 onerun:
     just serve

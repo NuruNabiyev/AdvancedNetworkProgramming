@@ -1,7 +1,8 @@
-from   pathlib import Path
-import pandas as pd
-import seaborn as sns
-import numpy as np
+from   pathlib    import Path
+import pandas     as pd
+import matplotlib.pyplot as plt
+import seaborn    as sns
+import numpy      as np
 import datetime
 import math
 import re
@@ -53,12 +54,25 @@ if __name__ == '__main__':
 
     now = datetime.datetime.now()
     df.to_csv('dataframes/ANP_BENCHMARKS_{}-{}-{}-{}-{}.csv'.format(now.year, now.month, now.day, now.hour, now.minute), index=False)
+    # http://stanford.edu/~raejoon/blog/2017/05/16/python-recipes-for-cdfs.html
+    num_bins = 20
+    data = df[['delta']].to_numpy(dtype='int')
+    print(type(data))
+    counts, bin_edges = np.histogram (data)
+    cdf = np.cumsum (counts)
+    plt.plot (bin_edges[1:], cdf/cdf[-1])
+    plt.title('CDF of Latency in TCP Exchange')
+    plt.xlabel('Delta in Nanoseconds')
+    plt.ylabel('Probability')
 
-    # make CDF
-    # https://stackoverflow.com/questions/25577352/plotting-cdf-of-a-pandas-series-in-python
-    df['cdf'] = df['delta'].rank(method='average', pct=True)
-    # sort
-    ax = df.sort_values('cdf').plot(x='delta', y='cdf', grid=True)
-    # plot
-    fig = ax.get_figure()
-    fig.savefig('plot.png')
+    plt.savefig('plot.png')
+    # statistics
+    print(f'Uncertainty {uncertainty}')
+    print(f'Average {np.average(data)}')
+    print(f'Median {delta_median}')
+    print(f'Max Observed {np.max(data)}')
+    print(f'Min Observed {np.min(data)}')
+    print(f'N {N}')
+    for q in [95, 99]:
+        print ("{}%% percentile: {}".format (q, np.percentile(data, q)))
+
