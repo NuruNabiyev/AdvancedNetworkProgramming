@@ -48,8 +48,17 @@ makeloop:
     watchexec -c -w .git -- just makerun
 
 benchmark:
-    just makerun >> benchmark_results/{{timestamp}} 
+    just makerun >> benchmark_results/{{timestamp}}
+
+benchmark-verify:
+    just makerun >> benchmark_results_verify/{{timestamp}}
+
+process:
     grep 'BENCHMARK' benchmark_results/* | cut -d' ' -f2 >> finalresults
+
+process-verify:
+    grep 'BENCHMARK' benchmark_results_verify/* | cut -d' ' -f2 >> finalresults_verify
+
 
 onerun:
     just serve
@@ -58,6 +67,15 @@ onerun:
 sample:
     for i in `seq 100`; do \
         just onerun;      \
+    done
+
+onerun-verify:
+    just serve
+    just benchmark-verify
+
+sample-verify:
+    for i in `seq 100`; do  \
+        just onerun-verify; \
     done
 
 hack:

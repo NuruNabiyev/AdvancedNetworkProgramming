@@ -17,13 +17,15 @@ if __name__ == '__main__':
     # flatten list
     files = [x for x in p.iterdir()]
     for f in files:
+        # init delta variable
         d = 0
         with open(f.as_posix(), 'r') as file_content:
             # parse line
             for line in file_content.readlines():
                 # search for keyword
                 if re.search(r'<<BENCHMARK>>', line, re.S) is not None:
-                    d = line.split()[1]
+                    result = line.split()[1]
+                    d = int(result) / 1000 # convert to microseconds
             # create a row
             df_row = pd.DataFrame({'delta': [d]})
         # add row to dataframe
@@ -31,13 +33,13 @@ if __name__ == '__main__':
 
     # Median Absolute Deviation
     delta_median = df.median()[0]
-    MAD = df.apply(lambda x: abs(int(x) - delta_median), axis=1).median()
+    MAD = df.apply(lambda x: abs(float(x) - delta_median), axis=1).median()
 
     standard_deviation = 3
     right_tail = delta_median + MAD * standard_deviation
     left_tail  = delta_median - MAD * standard_deviation
     # find outliers
-    df['outlier'] = df['delta'].apply(lambda x: 'True' if ((left_tail > int(x)) or (int(x) > right_tail)) else 'False')
+    df['outlier'] = df['delta'].apply(lambda x: 'True' if ((left_tail > float(x)) or (float(x) > right_tail)) else 'False')
     # filter the outliers
     df.delta.where(df.outlier.isin(['False']),'', inplace=True)
     # number of good measurements
@@ -49,20 +51,20 @@ if __name__ == '__main__':
     df.replace('', np.nan, inplace=True)
     df.dropna(inplace=True)
 
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):
-        print(df)
+    # with pd.option_context('display.max_rows', None, 'display.max_columns', None):
+    #     print(df)
 
     now = datetime.datetime.now()
     df.to_csv('dataframes/ANP_BENCHMARKS_{}-{}-{}-{}-{}.csv'.format(now.year, now.month, now.day, now.hour, now.minute), index=False)
     # http://stanford.edu/~raejoon/blog/2017/05/16/python-recipes-for-cdfs.html
     num_bins = 20
-    data = df[['delta']].to_numpy(dtype='int')
+    data = df[['delta']].to_numpy(dtype='float')
     print(type(data))
     counts, bin_edges = np.histogram (data)
     cdf = np.cumsum (counts)
     plt.plot (bin_edges[1:], cdf/cdf[-1])
     plt.title('CDF of Latency in TCP Exchange')
-    plt.xlabel('Delta in Nanoseconds')
+    plt.xlabel('Delta in microseconds')
     plt.ylabel('Probability')
 
     plt.savefig('plot.png')
