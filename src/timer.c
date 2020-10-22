@@ -161,6 +161,7 @@ void timer_cancel(struct timer *t) {
 
 void *timers_start() {
     //10 millisecond timer loop
+    printf("void *timers_start()\n");
     while (1) {
         if (usleep(10000) != 0) {
             perror("Timer usleep");
